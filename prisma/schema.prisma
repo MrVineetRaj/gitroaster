@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum PullRequestStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum SubscriptionStatus {
+  pending
+  authenticated
+  active
+  paused
+  cancelled
+  halted
+}
+
+enum PaymentStatus {
+  pending
+  captured
+  failed
+}
+
+model User {
+  username String @id
+  email String @unique
+  defaultOrg String
+  role UserRole @default(USER)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  repos OrgRepo[]
+  memberAt UserAsMemberAndOrg[]
+  pullRequests PullRequest[]
+  installationId InstallationId[]
+  subscriptions Subscription[]
+  payments Payments[]
+}
+
+model InstallationId {
+  id String @id @default(uuid())
+  installationId String
+  ownerUsername String 
+  orgname String 
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([orgname,ownerUsername])
+
+  orgOwner User @relation(fields: [ownerUsername],references: [username],onDelete: Cascade)
+}
+
+model UserAsMemberAndOrg {
+  id String @id @default(uuid())
+  orgname String
+  teamMemberUsername String 
+  isAllowed Boolean
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([orgname,teamMemberUsername])
+
+  teamMember User @relation(fields: [teamMemberUsername],references: [username],onDelete: Cascade) 
+}
+
+model OrgRepo {
+  repoFullName String @id
+  ownerUsername String 
+  orgname String 
+  isConnected Boolean
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  owner User @relation(fields: [ownerUsername],references: [username],onDelete: Cascade)
+  pullRequests PullRequest[]
+}
+
+model PullRequest {
+  id String @id @default(uuid())
+  ownerUsername String 
+  repoFullName String 
+  orgname String 
+  author String 
+  pullNumber Int
+  status PullRequestStatus @default(PENDING)
+  timeTakenToReview Int
+  
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([repoFullName,pullNumber])
+
+  parentRepo OrgRepo @relation(fields: [repoFullName],references: [repoFullName],onDelete: Cascade)
+  parentOrgOwner User @relation(fields: [ownerUsername],references: [username],onDelete: Cascade)
+}
+
+model Plan {
+  planId String @id
+  interval Int
+  period String
+  name String
+  description String
+  unitAmount Int
+  currency String
+  features String[]
+
+  isActive Boolean
+  isPopular Boolean
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  subscriptions Subscription[]
+}
+model Subscription {
+  subscriptionId String @id
+  planId String 
+  orgname String 
+  username String 
+  status SubscriptionStatus @default(pending)
+  cycleStart DateTime
+  cycleEnd DateTime
+  upcomingPayment DateTime?
+
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  plan Plan @relation(fields: [planId],references: [planId],onDelete: Cascade)
+  user User @relation(fields: [username],references: [username],onDelete: Cascade)
+}
+
+model Payments {
+  paymentId String @id
+  orgname String 
+  username String 
+  amount Int
+  currency String
+  status PaymentStatus @default(pending)
+  invoiceId String 
+  orderId String 
+  method String
+  paymentDetails Json 
+  email String
+  contact String
+
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [username],references: [username],onDelete: Cascade)
+}
