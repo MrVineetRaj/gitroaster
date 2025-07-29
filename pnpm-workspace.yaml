@@ -1,5 +1,6 @@
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@tailwindcss/oxide'
+  - core-js
   - sharp
   - unrs-resolver
