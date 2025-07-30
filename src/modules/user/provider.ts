@@ -86,4 +86,27 @@ export const userRouter = createTRPCRouter({
         });
       }
     }),
+  updateDefaultGithubOrg: protectedProcedure
+    .input(
+      z.object({
+        orgname: z.string(),
+      })
+    )
+    .mutation(async ({ input: { orgname }, ctx }) => {
+      try {
+        await db.user.update({
+          where: {
+            username: ctx.auth?.githubUsername!,
+          },
+          data: {
+            defaultOrg: orgname,
+          },
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Not able to change default org try again later",
+        });
+      }
+    }),
 });

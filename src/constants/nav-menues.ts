@@ -1,4 +1,10 @@
-import { CogIcon, DollarSignIcon, GitPullRequestIcon, LayoutDashboardIcon } from "lucide-react";
+import {
+  CogIcon,
+  DollarSignIcon,
+  GitPullRequestIcon,
+  LayoutDashboardIcon,
+  Users2Icon,
+} from "lucide-react";
 
 export const DASHBOARD_NAV_MENU = [
   {
@@ -12,6 +18,12 @@ export const DASHBOARD_NAV_MENU = [
     href: "/dashboard/repositories",
     icon: GitPullRequestIcon,
     badge: null, // Example: number of connected repos
+  },
+  {
+    title: "Team",
+    href: "/dashboard/team",
+    icon: Users2Icon,
+    badge: null,
   },
   {
     title: "Config",

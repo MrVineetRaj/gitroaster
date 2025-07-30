@@ -55,6 +55,7 @@ model User {
   installationId InstallationId[]
   subscriptions Subscription[]
   payments Payments[]
+  aiTones AiTone[]
 }
 
 model InstallationId {
@@ -135,6 +136,7 @@ model Plan {
 
   subscriptions Subscription[]
 }
+
 model Subscription {
   subscriptionId String @id
   planId String 
@@ -172,4 +174,21 @@ model Payments {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [username],references: [username],onDelete: Cascade)
+}
+
+model AiTone {
+  id String @id @default(uuid())
+  username String 
+  orgname String
+  isUsed Boolean @default(false)
+  usedForRepoFullName String?
+
+  title String
+  userDescription String
+  extractedTone String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner User @relation(fields: [username],references: [username],onDelete: Cascade)
 }
