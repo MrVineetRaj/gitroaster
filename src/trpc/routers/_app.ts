@@ -2,8 +2,10 @@ import { z } from "zod";
 import { baseProcedure, createTRPCRouter } from "../init";
 import { TRPCError } from "@trpc/server";
 import { userRouter } from "@/modules/user/provider";
+import { githubRouter } from "@/modules/github/procedure";
 export const appRouter = createTRPCRouter({
-  userRouter: userRouter,
+  userRouter,
+  githubRouter,
   hello: baseProcedure
     .input(
       z.object({
