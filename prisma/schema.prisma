@@ -29,6 +29,7 @@ enum SubscriptionStatus {
   pending
   authenticated
   active
+  completed
   paused
   cancelled
   halted
@@ -142,9 +143,9 @@ model Subscription {
   planId String 
   orgname String 
   username String 
-  status SubscriptionStatus @default(pending)
-  cycleStart DateTime
-  cycleEnd DateTime
+  status String  @default("pending")
+  cycleStart DateTime?
+  cycleEnd DateTime?
   upcomingPayment DateTime?
 
 
@@ -161,8 +162,8 @@ model Payments {
   username String 
   amount Int
   currency String
-  status PaymentStatus @default(pending)
-  invoiceId String 
+  status String @default("pending")
+  invoiceId String?
   orderId String 
   method String
   paymentDetails Json 
