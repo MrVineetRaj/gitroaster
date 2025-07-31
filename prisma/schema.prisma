@@ -192,3 +192,19 @@ model AiTone {
 
   owner User @relation(fields: [username],references: [username],onDelete: Cascade)
 }
+
+enum InvitationStatus {
+  pending
+  accepted
+  rejected
+}
+
+model Invitations{
+  id String @id @default(uuid())
+  senderUserName String
+  orgname String
+  username String
+  email String
+  status InvitationStatus @default(pending)
+  isResponded Boolean
+}

@@ -16,7 +16,6 @@ export const userRouter = createTRPCRouter({
         installationId: true,
       },
     });
-
     if (data) {
       const {
         installationId: installationIds = [],
@@ -38,11 +37,20 @@ export const userRouter = createTRPCRouter({
         installationId: installationId[0]?.installationId ?? "",
       };
     }
+
     const user = await db.user.create({
       data: {
         username: ctx?.auth?.githubUsername!,
         email: ctx?.auth?.user?.email!,
         defaultOrg: ctx?.auth?.githubUsername!,
+      },
+    });
+
+    await db.userAsMemberAndOrg.create({
+      data: {
+        orgname: user.defaultOrg,
+        teamMemberUsername: user.username,
+        isAllowed: true,
       },
     });
 
@@ -100,6 +108,23 @@ export const userRouter = createTRPCRouter({
           },
           data: {
             defaultOrg: orgname,
+          },
+        });
+
+        await db.userAsMemberAndOrg.upsert({
+          where: {
+            orgname_teamMemberUsername: {
+              orgname,
+              teamMemberUsername: ctx.auth?.githubUsername!,
+            },
+          },
+          update: {
+            updatedAt: new Date(),
+          },
+          create: {
+            orgname,
+            teamMemberUsername: ctx.auth?.githubUsername!,
+            isAllowed: true,
           },
         });
       } catch (error) {
