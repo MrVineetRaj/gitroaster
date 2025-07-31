@@ -119,17 +119,17 @@ model PullRequest {
 }
 
 model Plan {
-  planId String @id
-  interval Int
-  period String
-  name String
-  description String
-  unitAmount Int
-  currency String
-  features String[]
+  planId String @id // id
+  interval Int  // interval
+  period String // period
+  name String // item.name
+  description String //item.name
+  unitAmount Int //item.amount
+  currency String //item.currency
+  features String[] // notes.features
 
-  isActive Boolean
-  isPopular Boolean
+  isActive Boolean // false
+  isPopular Boolean // false
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())

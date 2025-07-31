@@ -4,10 +4,12 @@ import { TRPCError } from "@trpc/server";
 import { userRouter } from "@/modules/user/provider";
 import { githubRouter } from "@/modules/github/procedure";
 import { teamRouter } from "@/modules/team/procedure";
+import { razorPayRouter } from "@/modules/razorpay/procedure";
 export const appRouter = createTRPCRouter({
   userRouter,
   githubRouter,
   teamRouter,
+  razorPayRouter,
   hello: baseProcedure
     .input(
       z.object({

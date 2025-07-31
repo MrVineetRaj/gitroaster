@@ -34,6 +34,34 @@ const isAuthed = t.middleware(({ next, ctx }) => {
     },
   });
 });
+const isAdmin = t.middleware(async ({ next, ctx }) => {
+  if (!ctx.auth?.githubUsername) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Not Authenticated",
+    });
+  }
+
+  const user = await db.user.findUnique({
+    where: {
+      username: ctx.auth?.githubUsername!,
+    },
+  });
+
+  if (user?.role !== UserRole.ADMIN) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Not Authenticated",
+    });
+  }
+
+  return next({
+    ctx: {
+      auth: ctx.auth,
+      user,
+    },
+  });
+});
 
 // const isAdmin = t.middleware(async ({ next, ctx }) => {
 //   if (!ctx.auth?.githubUsername) {
@@ -69,4 +97,5 @@ export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure;
 export const protectedProcedure = t.procedure.use(isAuthed);
+export const adminProtectedProcedure = t.procedure.use(isAdmin);
 // export const adminProtectedProcedure = t.procedure.use(isAdmin);
