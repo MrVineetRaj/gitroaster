@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 // import { ReviewStatus } from "@/generated/prisma";
 import { TRPCError } from "@trpc/server";
 import { ContextMenuContent } from "@radix-ui/react-context-menu";
+import { InvitationStatus } from "@/generated/prisma";
 // import { razorpayInstance } from "../razorpay/utils";
 
 export const teamRouter = createTRPCRouter({
@@ -49,14 +50,14 @@ export const teamRouter = createTRPCRouter({
         orgname: z.string(),
       })
     )
-    .query(async ({ input: { username ,orgname}, ctx }) => {
+    .query(async ({ input: { username, orgname }, ctx }) => {
       const sentInvitations = await db.invitations.findMany({
         where: {
           senderUserName: ctx?.auth?.githubUsername!,
           orgname,
         },
-      }); 
-      
+      });
+
       const receivedInvitations = await db.invitations.findMany({
         where: {
           username: ctx?.auth?.githubUsername!,
@@ -68,7 +69,46 @@ export const teamRouter = createTRPCRouter({
         received: receivedInvitations,
       };
 
-
       return classifiedInvitations;
+    }),
+  updateInvitationStatus: protectedProcedure
+    .input(
+      z.object({
+        orgname: z.string(),
+        isAccepted: z.boolean(),
+        invitationId: z.string(),
+      })
+    )
+    .mutation(async ({ input: { isAccepted, invitationId, orgname }, ctx }) => {
+      try {
+        await db.invitations.update({
+          where: {
+            id: invitationId,
+            username: ctx?.auth?.githubUsername!,
+          },
+          data: {
+            status: isAccepted
+              ? InvitationStatus.accepted
+              : InvitationStatus.rejected,
+            isResponded: true,
+          },
+        });
+
+        if (isAccepted) {
+          await db.userAsMemberAndOrg.create({
+            data: {
+              orgname,
+              teamMemberUsername: ctx?.auth?.githubUsername!,
+              isAllowed: false,
+            },
+          });
+        }
+      } catch (error) {
+        console.log(error)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Something wrong try again later",
+        });
+      }
     }),
 });

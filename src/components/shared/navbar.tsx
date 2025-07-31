@@ -36,10 +36,17 @@ export const Navbar = ({ session }: { session: Session | null }) => {
           </ISignedOut>
           <ISignedIn session={session}>
             <Link href={"/dashboard"}>
-              <Button variant="outline" className="font-bold ">
+              <Button variant="outline" className="font-bold !text-foreground">
                 Dashboard
               </Button>
             </Link>
+            <Image
+              src={session?.user?.image!}
+              alt={session?.githubUsername!}
+              width={120}
+              height={120}
+              className="size-8 rounded-full"
+            />
           </ISignedIn>
         </span>
       </nav>

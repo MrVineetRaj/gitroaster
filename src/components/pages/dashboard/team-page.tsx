@@ -5,7 +5,7 @@ import { Tabs, TabsTrigger, TabsList, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import useAuthStore from "@/store/use-auth";
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import {
   AlertDialog,
@@ -21,7 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { CheckIcon, XIcon } from "lucide-react";
+import { CheckIcon, XIcon, XOctagon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const ManageTeam = () => {
@@ -60,8 +60,9 @@ export const ManageTeam = () => {
             onClick={() => {
               setOpenModel(true);
             }}
+            className="bg-accent/30 px-4 py-2 rounded-md border"
           >
-            Invite Member
+            <span >Invite Member</span>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -163,11 +164,28 @@ export const ManageTeam = () => {
 
 export const ManageInvitations = () => {
   const { username, defaultOrg } = useAuthStore();
+  const [toastId, setToastId] = useState<string | number>("");
   const trpc = useTRPC();
   const { data: invitations, isPending: loadingInvitations } = useQuery(
     trpc.teamRouter.getInvitation.queryOptions({
       username: username,
-      orgname:defaultOrg,
+      orgname: defaultOrg,
+    })
+  );
+  const queryClient = useQueryClient();
+  const updateInvitationStatus = useMutation(
+    trpc?.teamRouter.updateInvitationStatus.mutationOptions({
+      onSuccess: () => {
+        toast.success("Updated invitation status successfully", {
+          id: toastId,
+        });
+        queryClient.invalidateQueries(
+          trpc.teamRouter.getInvitation.queryOptions({
+            username: username,
+            orgname: defaultOrg,
+          })
+        );
+      },
     })
   );
 
@@ -177,27 +195,57 @@ export const ManageInvitations = () => {
     tab,
     isResponded,
     orgname,
+    invitationId,
   }: {
     username: string;
     createdAt?: Date;
     status: string;
     tab: "sent" | "received";
     isResponded: boolean;
-    orgname:string
+    orgname: string;
+    invitationId: string;
   }) => {
     return (
-      <span className="flex items-center justify-between">
-        <span>{tab === "received" ? orgname:username }</span>
+      <span className="flex items-center justify-between hover:bg-accent p-2 rounded-md transition-all duration-300 w-full">
+        <span>{tab === "received" ? orgname : username}</span>
         <span className="flex items-center gap-2">
-          <Badge>{status}</Badge>
+          <Badge
+            variant={
+              status === "pending"
+                ? "outline"
+                : status === "accepted"
+                ? "default"
+                : "destructive"
+            }
+          >
+            {status}
+          </Badge>
           {tab === "received" && !isResponded && (
             <>
-              <span>
-                <CheckIcon />
-              </span>
-              <span>
-                <XIcon />
-              </span>
+              <CheckIcon
+                className="size-5 text-green-500 cursor-pointer"
+                onClick={() => {
+                  const toastId = toast.loading("Accepting invitation");
+                  setToastId(toastId);
+                  updateInvitationStatus.mutateAsync({
+                    isAccepted: true,
+                    invitationId,
+                    orgname,
+                  });
+                }}
+              />
+              <XOctagon
+                className="size-5 text-red-500 cursor-pointer"
+                onClick={() => {
+                  const toastId = toast.loading("Rejecting invitation");
+                  setToastId(toastId);
+                  updateInvitationStatus.mutateAsync({
+                    isAccepted: false,
+                    invitationId,
+                    orgname,
+                  });
+                }}
+              />
             </>
           )}
         </span>
@@ -205,7 +253,27 @@ export const ManageInvitations = () => {
     );
   };
   if (loadingInvitations) {
-    return <p>Loading</p>;
+    return (
+      <div className="w-full flex-col items-start">
+        <span className="flex items-center gap-2">
+          <Skeleton className="w-24 h-6"></Skeleton>
+          <Skeleton className="w-24 h-6"></Skeleton>
+        </span>
+        <span className="flex flex-col w-full bg-card mt-4 items-center gap-2 py-2">
+          {Array.from({ length: 5 }).map((_, idx) => {
+            return (
+              <span
+                className="w-full flex items-center justify-between py-2 px-4"
+                key={idx}
+              >
+                <Skeleton className="w-48 h-8" />
+                <Skeleton className="w-16 h-6" />
+              </span>
+            );
+          })}
+        </span>
+      </div>
+    );
   }
 
   return (
@@ -216,34 +284,62 @@ export const ManageInvitations = () => {
     >
       <TabsList>
         <TabsTrigger value="sent">Sent</TabsTrigger>
-        <TabsTrigger value="received">Received</TabsTrigger>
+        {defaultOrg === username && (
+          <TabsTrigger value="received">Received</TabsTrigger>
+        )}
       </TabsList>
-      <TabsContent value="sent">
-        {invitations?.sent.length &&
+      <TabsContent
+        value="sent"
+        className="bg-card p-2 flex flex-col w-full gap-2"
+      >
+        {invitations?.sent.length ? (
           invitations?.sent?.map((invitation) => (
             <InvitationItem
-            orgname={invitation.orgname}
+              invitationId={invitation.id}
+              orgname={invitation.orgname}
               key={invitation.id}
               username={invitation.username}
               status={invitation.status}
               tab="sent"
               isResponded={invitation.isResponded}
             />
-          ))}
+          ))
+        ) : (
+          <div className="">
+            <h1 className="w-full py-[16vh] text-center text-2xl font-semibold italic">
+              You never sent any invitation to other users <br />
+              for Organization{" "}
+              <span className="text-primary">{defaultOrg}</span>
+            </h1>
+          </div>
+        )}
       </TabsContent>
-      <TabsContent value="received">
-        {invitations?.received.length &&
-          invitations?.received?.map((invitation) => (
-            <InvitationItem
-            orgname={invitation.orgname}
-              key={invitation.id}
-              username={invitation.username}
-              status={invitation.status}
-              tab="received"
-              isResponded={invitation.isResponded}
-            />
-          ))}
-      </TabsContent>
+      {defaultOrg === username && (
+        <TabsContent
+          value="received"
+          className="bg-card p-2 flex flex-col w-full gap-2"
+        >
+          {invitations?.received.length ? (
+            invitations?.received?.map((invitation) => (
+              <InvitationItem
+                invitationId={invitation.id}
+                orgname={invitation.orgname}
+                key={invitation.id}
+                username={invitation.username}
+                status={invitation.status}
+                tab="received"
+                isResponded={invitation.isResponded}
+              />
+            ))
+          ) : (
+            <div className="">
+              <h1 className="w-full py-[16vh] text-center text-2xl font-semibold italic">
+                No on sent you any invitation <br /> to join there organization
+              </h1>
+            </div>
+          )}
+        </TabsContent>
+      )}
     </Tabs>
   );
 };
@@ -265,7 +361,7 @@ export const TeamPage = () => {
       </div>
 
       <div className="mt-2 p-4">
-        <Tabs defaultValue="team">
+        <Tabs defaultValue="invitations">
           <TabsList>
             <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="orgs">Orgs</TabsTrigger>

@@ -15,7 +15,7 @@ import {
 } from "../ui/sidebar";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { DASHBOARD_NAV_MENU, PROFILE_MENU } from "@/constants/nav-menues";
+import { ADMIN_MENU, DASHBOARD_NAV_MENU, PROFILE_MENU } from "@/constants/nav-menues";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
 import { useMutation } from "@tanstack/react-query";
 import useAuthStore from "@/store/use-auth";
+import { UserRole } from "@/generated/prisma";
 
 interface Props {
   session: Session | null;
@@ -80,9 +81,13 @@ export const DashboardSidebar = ({
 
   useEffect(() => {
     if (session?.githubUsername && defaultOrg) {
-      setUseDetails({ username: session?.githubUsername, defaultOrg });
+      setUseDetails({
+        username: session?.githubUsername,
+        defaultOrg,
+        userRole,
+      });
     }
-  }, [session, defaultOrg, setUseDetails]);
+  }, [session, defaultOrg, userRole, setUseDetails]);
   // Detect screen size
   useEffect(() => {
     const checkScreenSize = () => {
@@ -221,7 +226,6 @@ export const DashboardSidebar = ({
                 ))}
               </SidebarMenu>
             </SidebarGroup>
-
             {/* Profile Section */}
             <SidebarGroup className="px-2">
               {!isCollapsed && (
@@ -235,22 +239,21 @@ export const DashboardSidebar = ({
                 ))}
               </SidebarMenu>
             </SidebarGroup>
-
-            {/* Admin
-          {user?.role === UserRole.ADMIN && (
-            <SidebarGroup className="px-2">
-              {!isCollapsed && (
-                <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-2">
-                  Admin
-                </SidebarGroupLabel>
-              )}
-              <SidebarMenu className="space-y-1">
-                {ADMIN_MENU.map((item) => (
-                  <NavItem key={item.href} item={item} section="profile" />
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          )} */}
+            {/* Admin */}
+            {userRole === UserRole.ADMIN && (
+              <SidebarGroup className="px-2">
+                {!isCollapsed && (
+                  <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                    Admin
+                  </SidebarGroupLabel>
+                )}
+                <SidebarMenu className="space-y-1">
+                  {ADMIN_MENU.map((item) => (
+                    <NavItem key={item.href} item={item} section="profile" />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            )}
           </SidebarContent>
           {/* Footer */}
           <SidebarFooter className="border-t  bg-card">
@@ -311,7 +314,7 @@ export const DashboardSidebar = ({
                         <SelectTrigger className="w-full">
                           {defaultOrg}
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent title="Organizations">
                           <SelectItem value={session?.githubUsername!}>
                             {session?.githubUsername}
                           </SelectItem>

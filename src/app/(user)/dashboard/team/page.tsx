@@ -8,12 +8,11 @@ import React, { Suspense } from "react";
 const Page = () => {
   return (
     <div className="w-full bg-background h-screen ">
-      <Suspense fallback={<TeamPage />}>
-        <TeamPage />
-      </Suspense>
+      {/* <Suspense fallback={<TeamPage />}> */}
+      <TeamPage />
+      {/* </Suspense> */}
     </div>
   );
 };
 
 export default Page;
-
