@@ -14,6 +14,11 @@ const eslintConfig = [
   {
     ignores: ["**/*/generated/**"],
   },
+  {
+    rules: {
+      "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

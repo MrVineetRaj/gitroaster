@@ -8,8 +8,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { type Items } from "razorpay/dist/types/items";
-import { type IMap } from "razorpay/dist/types/api";
 import { CurrencyShortIcon } from "@/constants/pricing";
 import {
   Tooltip,

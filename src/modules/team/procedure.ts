@@ -3,7 +3,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { db } from "@/lib/prisma";
 // import { ReviewStatus } from "@/generated/prisma";
 import { TRPCError } from "@trpc/server";
-import { ContextMenuContent } from "@radix-ui/react-context-menu";
+
 import { InvitationStatus } from "@/generated/prisma";
 // import { razorpayInstance } from "../razorpay/utils";
 
@@ -50,7 +50,7 @@ export const teamRouter = createTRPCRouter({
         orgname: z.string(),
       })
     )
-    .query(async ({ input: { username, orgname }, ctx }) => {
+    .query(async ({ input: { orgname }, ctx }) => {
       const sentInvitations = await db.invitations.findMany({
         where: {
           senderUserName: ctx?.auth?.githubUsername!,
@@ -104,7 +104,7 @@ export const teamRouter = createTRPCRouter({
           });
         }
       } catch (error) {
-        console.log(error)
+        console.log(error);
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Something wrong try again later",

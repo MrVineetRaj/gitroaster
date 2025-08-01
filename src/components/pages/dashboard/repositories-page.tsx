@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import RepoContainer from "@/components/dashboard/repositories/repo-container";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,8 +16,6 @@ import {
   ExternalLinkIcon,
   GitBranchIcon,
   PlusIcon,
-  RefreshCwIcon,
-  SettingsIcon,
   ShieldCheckIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -167,7 +164,7 @@ export const RepositoriesPage = async () => {
                       Install GitRoaster GitHub App
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      Click "Connect Your First Repository" to install our
+                      Click {`"Connect Your First Repository"`} to install our
                       GitHub app
                     </p>
                   </div>

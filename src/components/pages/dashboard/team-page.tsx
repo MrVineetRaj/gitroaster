@@ -21,7 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { CheckIcon, XIcon, XOctagon } from "lucide-react";
+import { CheckIcon, XOctagon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const ManageTeam = () => {
@@ -344,7 +344,7 @@ export const ManageInvitations = () => {
   );
 };
 export const TeamPage = () => {
-  const { username } = useAuthStore();
+  
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-card border-b">

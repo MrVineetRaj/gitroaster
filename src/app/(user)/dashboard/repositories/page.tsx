@@ -15,4 +15,4 @@ const Page = () => {
 };
 
 export default Page;
-RepositoriesPageLoader;
+

@@ -12,7 +12,7 @@ export const githubRouter = createTRPCRouter({
         orgname: z.string(),
       })
     )
-    .query(async ({ input: { orgname }, ctx }) => {
+    .query(async ({ input: { orgname } }) => {
       const connectedRepo = await db.orgRepo.findMany({
         where: {
           orgname,
@@ -28,7 +28,7 @@ export const githubRouter = createTRPCRouter({
         repoFullName: z.string(),
       })
     )
-    .mutation(async ({ input: { orgname, repoFullName }, ctx }) => {
+    .mutation(async ({ input: { orgname, repoFullName } }) => {
       try {
         await db.orgRepo.delete({
           where: {
@@ -37,6 +37,7 @@ export const githubRouter = createTRPCRouter({
           },
         });
       } catch (error) {
+        console.log(error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to connect repo try again later",

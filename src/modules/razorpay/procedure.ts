@@ -31,7 +31,7 @@ export const razorPayRouter = createTRPCRouter({
 
     const prevPlanMetadata: Record<string, (typeof oldPlans)[0]> = {};
 
-    console.log(oldPlans)
+    console.log(oldPlans);
     oldPlans.forEach((plan) => {
       prevPlanMetadata[plan.planId] = plan;
     });
@@ -149,7 +149,7 @@ export const razorPayRouter = createTRPCRouter({
         member_count: z.number(),
       })
     )
-    .mutation(async ({ input: { planId, member_count }, ctx }) => {
+    .mutation(async () => {
       // const currTime = Math.floor(Date.now() / 1000);
       // try {
       //   const subscription = await razorpayInstance.subscriptions.create({

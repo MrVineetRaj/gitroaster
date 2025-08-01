@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { GitHubRepo } from "./types";

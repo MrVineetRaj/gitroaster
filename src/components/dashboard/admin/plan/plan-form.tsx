@@ -1,10 +1,10 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CurrencyShortIcon } from "@/constants/pricing";
+
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useState } from "react";
+
+import React from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +16,6 @@ import {
   DialogTrigger,
   DialogContent,
   DialogDescription,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -28,17 +27,7 @@ import {
 } from "@/components/ui/select";
 import TextareaAutosize from "react-textarea-autosize";
 import { cn } from "@/lib/utils";
-import { CheckCircleIcon, StarIcon, StarsIcon, TrashIcon } from "lucide-react";
-import { toast } from "sonner";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
-import { TooltipContent } from "@radix-ui/react-tooltip";
+import { TrashIcon } from "lucide-react";
 
 const planFormSchema = z.object({
   isYearly: z.boolean(),
@@ -93,8 +82,6 @@ export function PlanForm() {
   // );
 
   const onSubmit = (data: PlanFormType) => {
-    const { isYearly, planName, description, features, amount, currency } =
-      data;
     const validationResult = planFormSchema.safeParse(data);
 
     if (!validationResult.success) {

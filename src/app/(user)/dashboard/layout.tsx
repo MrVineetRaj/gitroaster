@@ -9,7 +9,7 @@ import { Toaster } from "sonner";
 
 export async function DashboardSidebarServer() {
   const session = await auth();
-  const { user, subscription, installationId } =
+  const { user, subscription } =
     await caller.userRouter.syncUser();
 
   return (

@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { ADMIN_MENU, DASHBOARD_NAV_MENU, PROFILE_MENU } from "@/constants/nav-menues";
 import Link from "next/link";
-import { Badge } from "../ui/badge";
+
 import { Button } from "../ui/button";
 import { signOut } from "@/auth";
 import {
@@ -25,12 +25,13 @@ import {
   ChevronRightIcon,
   CogIcon,
   LogOutIcon,
+  LucideProps,
 } from "lucide-react";
 import ThemeController from "../shared/theme-controller";
 import { Tooltip, TooltipTrigger } from "../ui/tooltip";
 import { TooltipContent } from "@radix-ui/react-tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
-import { SelectIcon } from "@radix-ui/react-select";
+
 import { Skeleton } from "../ui/skeleton";
 import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
@@ -55,13 +56,12 @@ interface Props {
         cycleEnd: Date;
         upcomingPayment: Date | null;
       }
-    | {};
+    | object;
 }
 
 export const DashboardSidebar = ({
   session,
   userRole,
-  subscription,
   defaultOrg,
 }: Props) => {
   const { setUseDetails } = useAuthStore();
@@ -106,9 +106,15 @@ export const DashboardSidebar = ({
 
   const NavItem = ({
     item,
-    section = "dashboard",
   }: {
-    item: any;
+    item: {
+      title: string;
+      href: string;
+      icon: React.ForwardRefExoticComponent<
+        Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+      >;
+      badge: null;
+    };
     section?: string;
   }) => (
     <SidebarMenuItem className="w-full">

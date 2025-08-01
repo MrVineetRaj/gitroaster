@@ -1,4 +1,3 @@
-import { PaymentStatus, SubscriptionStatus } from "@/generated/prisma";
 import { db } from "@/lib/prisma";
 import Razorpay from "razorpay";
 import { Payments } from "razorpay/dist/types/payments";
@@ -68,7 +67,10 @@ export class RazorpayActions {
           invoiceId: payment.invoice_id ? payment.invoice_id : null,
           orderId: payment.order_id,
           method: payment.method,
-          paymentDetails: (payment as any)[payment.method],
+          paymentDetails:
+            (payment as unknown as { [key: string]: unknown })[
+              payment.method
+            ] ?? {},
           email: payment.email,
           contact: String(payment.contact),
         },

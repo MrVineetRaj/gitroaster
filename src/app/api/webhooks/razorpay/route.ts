@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-import { db } from "@/lib/prisma";
 import { validateWebhookSignature } from "razorpay/dist/utils/razorpay-utils";
-import { PaymentStatus } from "@/generated/prisma";
 import { razorpayActions } from "@/modules/razorpay/utils";
 
 export async function POST(req: NextRequest) {

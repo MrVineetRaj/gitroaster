@@ -4,8 +4,7 @@ import Image from "next/image";
 import React from "react";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { SunMoonIcon } from "lucide-react";
-import { signIn } from "next-auth/react";
+
 import { ISignedIn, ISignedOut } from "../auth/auth-control";
 import { Session } from "next-auth";
 import ThemeController from "./theme-controller";
