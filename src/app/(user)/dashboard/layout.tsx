@@ -9,12 +9,13 @@ import { Toaster } from "sonner";
 
 export async function DashboardSidebarServer() {
   const session = await auth();
-  const { user, subscription } =
-    await caller.userRouter.syncUser();
+  const { user, subscription } = await caller.userRouter.syncUser();
+  const plans = await caller.razorPayRouter.getPublicPlans();
 
   return (
     <Suspense fallback={<></>}>
       <DashboardSidebar
+        plans={plans}
         session={session}
         userRole={user.role}
         subscription={subscription}
@@ -31,7 +32,7 @@ const UserLayout = async ({ children }: { children: React.ReactNode }) => {
         <DashboardSidebarServer />
       </Suspense>
       {children}
-      <Toaster position="top-center"/>
+      <Toaster position="top-center" />
     </div>
   );
 };

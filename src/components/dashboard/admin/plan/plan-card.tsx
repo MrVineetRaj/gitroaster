@@ -20,6 +20,7 @@ import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import useAuthStore from "@/store/use-auth";
 
 interface Props {
   plan: {
@@ -42,6 +43,7 @@ interface Props {
 const PlanCard = ({ plan, isAdminPage, currentPlan }: Props) => {
   const CurrencyIcon = CurrencyShortIcon[plan.currency];
   const router = useRouter();
+  const {defaultOrg} = useAuthStore()
 
   const trpc = useTRPC();
   const toggleActivePlanStatus = useMutation(
@@ -175,6 +177,7 @@ const PlanCard = ({ plan, isAdminPage, currentPlan }: Props) => {
                   createSubscription.mutateAsync({
                     planId: plan.planId,
                     member_count: 1,
+                    orgname:defaultOrg
                   });
                 }
               }}

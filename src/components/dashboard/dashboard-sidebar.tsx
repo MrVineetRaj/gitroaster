@@ -15,7 +15,11 @@ import {
 } from "../ui/sidebar";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { ADMIN_MENU, DASHBOARD_NAV_MENU, PROFILE_MENU } from "@/constants/nav-menues";
+import {
+  ADMIN_MENU,
+  DASHBOARD_NAV_MENU,
+  PROFILE_MENU,
+} from "@/constants/nav-menues";
 import Link from "next/link";
 
 import { Button } from "../ui/button";
@@ -37,7 +41,8 @@ import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
 import { useMutation } from "@tanstack/react-query";
 import useAuthStore from "@/store/use-auth";
-import { UserRole } from "@/generated/prisma";
+import { Plan, UserRole } from "@/generated/prisma";
+import usePlanStore from "@/store/use-plans";
 
 interface Props {
   session: Session | null;
@@ -57,14 +62,17 @@ interface Props {
         upcomingPayment: Date | null;
       }
     | object;
+  plans: Plan[];
 }
 
 export const DashboardSidebar = ({
+  plans,
   session,
   userRole,
   defaultOrg,
 }: Props) => {
   const { setUseDetails } = useAuthStore();
+  const { setPlans } = usePlanStore();
   const pathName = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const trpc = useTRPC();
@@ -88,6 +96,11 @@ export const DashboardSidebar = ({
       });
     }
   }, [session, defaultOrg, userRole, setUseDetails]);
+
+  useEffect(() => {
+    console.log("PRINTING");
+    setPlans(plans);
+  }, [plans]);
   // Detect screen size
   useEffect(() => {
     const checkScreenSize = () => {

@@ -42,7 +42,7 @@ const AdminPage = () => {
     trpc.razorPayRouter.seedRazorPayPlans.mutationOptions({
       onSuccess: (res) => {
         toast.success(res.message);
-        console.log(res.plans);
+        // console.log(res.plans);
       },
     })
   );

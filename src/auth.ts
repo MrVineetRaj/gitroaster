@@ -26,7 +26,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async session({ session, token }) {
       const octokit = new Octokit({ auth: token.accessToken as string });
-      console.log("token", token);
+      // console.log("token", token);
       // console.log("token.accessToken", token.accessToken);
       session.accessToken = token.accessToken as string;
       session.githubUsername = token.githubUsername as string;

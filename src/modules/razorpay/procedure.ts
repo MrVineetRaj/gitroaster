@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   adminProtectedProcedure,
+  baseProcedure,
   createTRPCRouter,
   protectedProcedure,
 } from "@/trpc/init";
@@ -82,6 +83,17 @@ export const razorPayRouter = createTRPCRouter({
     });
     return plans || [];
   }),
+  getPublicPlans: baseProcedure.query(async () => {
+    const plans = await db.plan.findMany({
+      where: {
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+    return plans || [];
+  }),
   toggleActivePlanStatus: adminProtectedProcedure
     .input(
       z.object({
@@ -147,48 +159,42 @@ export const razorPayRouter = createTRPCRouter({
       z.object({
         planId: z.string(),
         member_count: z.number(),
+        orgname: z.string(),
       })
     )
-    .mutation(async () => {
-      // const currTime = Math.floor(Date.now() / 1000);
-      // try {
-      //   const subscription = await razorpayInstance.subscriptions.create({
-      //     plan_id: planId,
-      //     customer_notify: true,
-      //     quantity: member_count,
-      //     total_count: 6,
-      //     // start_at: +(currTime + 60),
-      //     notes: {
-      //       orgname: ctx.auth?.githubUsername!,
-      //       email: ctx.auth?.user?.email!,
-      //     },
-      //   });
-      //   console.log(subscription);
-      //   await db.user.update({
-      //     where: {
-      //       username: ctx?.auth?.githubUsername,
-      //     },
-      //     data: {
-      //       mostRecentSubscription: subscription?.id,
-      //       subscriptionIds: {
-      //         push: subscription?.id,
-      //       },
-      //     },
-      //   });
-      //   return { subscription };
-      // } catch (error) {
-      //   console.log(error);
-      //   if (isRazorpayError(error)) {
-      //     const { description, field } = error.error;
-      //     throw new TRPCError({
-      //       code: "BAD_REQUEST",
-      //       message: description,
-      //     });
-      //   }
-      //   throw new TRPCError({
-      //     code: "BAD_REQUEST",
-      //     message: "Something went wrong",
-      //   });
-      // }
+    .mutation(async ({ input: { planId, member_count, orgname }, ctx }) => {
+      
+      const username = ctx?.auth?.githubUsername!;
+      try {
+        const subscription = await razorpayInstance.createSubscription({
+          planId,
+          member_count,
+          orgname,
+          username,
+          email: ctx?.auth?.user?.email!,
+        });
+
+        await db.subscription.create({
+          data: {
+            subscriptionId: subscription.id,
+            planId: subscription.plan_id,
+            username,
+            orgname,
+            cycleStart: subscription?.current_start
+              ? new Date(subscription?.current_start * 1000)
+              : null,
+            cycleEnd: subscription?.current_end
+              ? new Date(subscription?.current_end * 1000)
+              : null,
+            upcomingPayment: subscription?.charge_at
+              ? new Date(subscription?.charge_at * 1000)
+              : null,
+          },
+        });
+
+        return { subscription };
+      } catch (error) {
+        console.log(error);
+      }
     }),
 });

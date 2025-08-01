@@ -17,6 +17,34 @@ export class RazorpayInstance {
     const plans = await this.razorpayInstance.plans.all();
     return plans || [];
   }
+
+  async createSubscription({
+    planId,
+    member_count,
+    username,
+    orgname,
+    email,
+  }: {
+    planId: string;
+    member_count: number;
+    username: string;
+    orgname: string;
+    email: string;
+  }) {
+    const subscription = await this.razorpayInstance.subscriptions.create({
+      plan_id: planId,
+      customer_notify: true,
+      quantity: member_count,
+      total_count: 10*12,
+      notes: {
+        username,
+        orgname,
+        email,
+      },
+    });
+
+    return subscription;
+  }
 }
 
 export class RazorpayActions {
