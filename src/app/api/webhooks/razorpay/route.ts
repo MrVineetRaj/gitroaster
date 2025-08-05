@@ -23,24 +23,22 @@ export async function POST(req: NextRequest) {
   );
 
   if (!isValid) {
-    console.log("false request");
-    console.log(data);
     return NextResponse.json({
       status: 401,
       data,
     });
   }
-  
+
   if (
-    data.contains.include("subscription") &&
-    data.contains.include("payment")
+    data.contains.includes("subscription") &&
+    data.contains.includes("payment")
   ) {
     razorpayActions.upsertSubscriptionDetails(
       true,
       data.payload.subscription.entity,
       data.payload.payment.entity
     );
-  } else if (data.contains.include("subscription")) {
+  } else if (data.contains.includes("subscription")) {
     razorpayActions.upsertSubscriptionDetails(
       false,
       data.payload.subscription.entity

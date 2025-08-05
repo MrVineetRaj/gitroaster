@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@dqbd/tiktoken": "^1.0.21",
     "@hookform/resolvers": "^5.2.0",
     "@octokit/auth-app": "^8.0.2",
     "@octokit/rest": "^22.0.0",
@@ -51,13 +52,16 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
+    "inngest": "^3.40.1",
     "input": "^1.0.1",
     "input-otp": "^1.4.2",
+    "js-tiktoken": "^1.0.20",
     "label": "^0.2.2",
     "lucide-react": "^0.528.0",
     "next": "15.4.4",
     "next-auth": "5.0.0-beta.29",
     "next-themes": "^0.4.6",
+    "openai": "^5.11.0",
     "razorpay": "^2.9.6",
     "react": "19.1.0",
     "react-day-picker": "^9.8.1",
@@ -72,8 +76,9 @@
     "superjson": "^2.2.2",
     "tabs": "^0.2.0",
     "tailwind-merge": "^3.3.1",
+    "tiktoken": "^1.0.21",
     "vaul": "^1.1.2",
-    "zod": "^4.0.10",
+    "zod": "^3.25.76",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
