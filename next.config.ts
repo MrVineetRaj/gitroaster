@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false,
   images: {
     remotePatterns: [
       {
@@ -10,6 +11,9 @@ const nextConfig: NextConfig = {
         pathname: "/u/**",
       },
     ],
+  },
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./node_modules/**/*.wasm"],
   },
 };
 
