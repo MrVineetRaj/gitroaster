@@ -12,9 +12,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  outputFileTracingIncludes: {
-    "/api/**/*": ["./node_modules/**/*.wasm"],
-  },
 };
 
 export default nextConfig;
