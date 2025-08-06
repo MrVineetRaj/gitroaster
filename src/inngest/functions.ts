@@ -58,7 +58,14 @@ export const reviewGenerator = inngest.createFunction(
     );
 
     const {
-      payload: { installation_id, owner, repo, pull_number, author },
+      payload: {
+        installation_id,
+        owner,
+        repo,
+        pull_number,
+        author,
+        isFreeUser,
+      },
     } = event?.data;
 
     const octokit = new Octokit({
@@ -142,6 +149,29 @@ Hang tight – we’re reviewing your pull request to provide:
     const openAiClient = new OpenAIClient();
 
     const tokenCount = openAiClient.countToken(fileContent);
+
+    if (isFreeUser) {
+      if (tokenCount < 20000) {
+        try {
+          const res = await openAiClient.chatgptModel(
+            SYSTEM_PROMPT.summary.header,
+            fileContent
+          );
+
+          const aiResp = JSON.parse(res as string);
+
+          await octokit.pulls.update({
+            owner: owner,
+            repo: repo,
+            pull_number: pull_number,
+
+            body: aiResp.summary,
+          });
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    }
     if (tokenCount < 50000) {
       const res = await openAiClient.chatgptModel(
         SYSTEM_PROMPT.header,

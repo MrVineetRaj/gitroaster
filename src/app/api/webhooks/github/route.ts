@@ -118,8 +118,6 @@ export const POST = async (req: NextRequest) => {
     break;
   }
 
-  console.log("prDiffResponse new org", prDiffResponse);
-
   const { owner, repo, pull_number } = prDiffResponse;
 
   const octokit = new Octokit({
@@ -148,6 +146,8 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
+  console.log("author :", author);
+
   const isAllowed = await db.userAsMemberAndOrg.findUnique({
     where: {
       isAllowed: true,
@@ -158,6 +158,7 @@ export const POST = async (req: NextRequest) => {
     },
   });
 
+  console.log("isAllowed :", isAllowed);
   if (!isAllowed) {
     return NextResponse.json({ message: "Webhook processed successfully" });
   }
@@ -185,7 +186,28 @@ export const POST = async (req: NextRequest) => {
     },
   });
 
+  console.log("subscription :", subscription);
+
   if (!subscription) {
+    await inngest.send({
+      name: "app/review-generator",
+      data: {
+        payload: {
+          installation_id: installation_id,
+          owner,
+          repo,
+          pull_number,
+          author: prData.user?.login,
+          isFreeUser: true,
+          // data: diff_data_as_string,
+          // filenames: filenames,
+          // isLargePr: isLargePr,
+          // executionStartedAt: currTime,
+          // description_id: prData.id,
+          // hash_sha: prData.head.sha,
+        },
+      },
+    });
     return NextResponse.json({ message: "Webhook processed successfully" });
   }
 
@@ -196,10 +218,13 @@ export const POST = async (req: NextRequest) => {
     },
   });
 
+  console.log("allowedMemberCount :", allowedMemberCount);
+
   if (
     subscription?.plan.name.toLowerCase().split(" ").join("_") === "pro_plan" &&
     allowedMemberCount > 5
   ) {
+    console.log("not allowedMemberCount :");
     // todo : Send mail to owner of org
     return NextResponse.json({ message: "Webhook processed successfully" });
   }
@@ -236,6 +261,7 @@ export const POST = async (req: NextRequest) => {
   //   },
   // });
 
+  console.log("inngest running :");
   await inngest.send({
     name: "app/review-generator",
     data: {
