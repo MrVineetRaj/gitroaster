@@ -170,6 +170,8 @@ Hang tight – we’re reviewing your pull request to provide:
         } catch (error) {
           console.log(error);
         }
+
+        return { char: fileContent.length, token: tokenCount };
       }
     }
     if (tokenCount < 50000) {
@@ -189,6 +191,8 @@ Hang tight – we’re reviewing your pull request to provide:
         } catch (error) {
           console.log(error);
         }
+
+        await step.sleep("Generating line by line review", 500);
         try {
           const response = await octokit.pulls.createReview({
             owner: owner,
@@ -203,6 +207,7 @@ Hang tight – we’re reviewing your pull request to provide:
           console.log(error);
         }
 
+        await step.sleep("updating pr description", 500);
         try {
           const summaryResponse = await openAiClient.chatgptModel(
             SYSTEM_PROMPT.summary.header,
