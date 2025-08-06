@@ -76,160 +76,167 @@ export const reviewGenerator = inngest.createFunction(
         installationId: installation_id, // Use the parameter, not env var
       },
     });
-    await octokit.pulls.update({
-      owner: owner,
-      repo: repo,
-      pull_number: pull_number,
 
-      body: `
-🔥 **GitRoaster is firing up!**
+    await step.run("Placeholder description", async () => {
+      await octokit.pulls.update({
+        owner: owner,
+        repo: repo,
+        pull_number: pull_number,
 
-Hang tight – we’re reviewing your pull request to provide:
-
-- 📝 Code walkthrough
-- 🗂️ File change summaries
-- 📈 Diagrams and insights
-- 💡 Suggestions for improvements
-
-⏳ **Your AI review will be ready shortly.**
-          `,
-      // event: "COMMENT", // or "APPROVE" or "REQUEST_CHANGES"
-    });
-
-    await step.sleep("pre processing pr data", 500);
-
-    const { data: files } = await octokit.pulls.listFiles({
-      owner: owner!,
-      repo: repo!,
-      pull_number: +pull_number!,
-    });
-
-    const { data: prData } = await octokit.pulls.get({
-      owner: owner!,
-      repo: repo!,
-      pull_number: +pull_number!,
-    });
-
-    const fileData: {
-      [filename: string]: string;
-    } = {};
-    const filenames = files
-      .map((file) => {
-        if (file.status !== "removed") {
-          fileData[file.filename] = file.patch ? file.patch : "";
-
-          return file.filename;
-        } else {
-          return "";
-        }
-      })
-      .filter((filename) => {
-        // Exclude migrations (by folder name)
-        if (!filename) return false;
-        if (filename.toLowerCase().includes("migration")) return false;
-        for (let i = 0; i < excludeFileWords.length; i++) {
-          if (filename.toLocaleLowerCase().includes(excludeFileWords[i]))
-            return false;
-        }
-
-        // Exclude by extension (case-insensitive)
-        return !excludedExtensions.some((ext) =>
-          filename.toLowerCase().endsWith(ext)
-        );
+        body: `
+  🔥 **GitRoaster is firing up!**
+  
+  Hang tight – we’re reviewing your pull request to provide:
+  
+  - 📝 Code walkthrough
+  - 🗂️ File change summaries
+  - 📈 Diagrams and insights
+  - 💡 Suggestions for improvements
+  
+  ⏳ **Your AI review will be ready shortly.**
+            `,
       });
+    });
 
     let fileContent: string = "";
-    // let fileRead: string[] = [];
-    for (const file of filenames) {
-      fileContent += file + "\n" + fileData[file] + "\n\n";
-    }
+    await step.run("pre processing pr data", async () => {
+      const { data: files } = await octokit.pulls.listFiles({
+        owner: owner!,
+        repo: repo!,
+        pull_number: +pull_number!,
+      });
 
-    await step.sleep("Generating review", 500);
+      const { data: prData } = await octokit.pulls.get({
+        owner: owner!,
+        repo: repo!,
+        pull_number: +pull_number!,
+      });
+
+      const fileData: {
+        [filename: string]: string;
+      } = {};
+      const filenames = files
+        .map((file) => {
+          if (file.status !== "removed") {
+            fileData[file.filename] = file.patch ? file.patch : "";
+
+            return file.filename;
+          } else {
+            return "";
+          }
+        })
+        .filter((filename) => {
+          // Exclude migrations (by folder name)
+          if (!filename) return false;
+          if (filename.toLowerCase().includes("migration")) return false;
+          for (let i = 0; i < excludeFileWords.length; i++) {
+            if (filename.toLocaleLowerCase().includes(excludeFileWords[i]))
+              return false;
+          }
+
+          // Exclude by extension (case-insensitive)
+          return !excludedExtensions.some((ext) =>
+            filename.toLowerCase().endsWith(ext)
+          );
+        });
+
+      // let fileRead: string[] = [];
+      for (const file of filenames) {
+        fileContent += file + "\n" + fileData[file] + "\n\n";
+      }
+    });
 
     const openAiClient = new OpenAIClient();
+    let tokenCount = 0;
 
-    const tokenCount = openAiClient.countToken(fileContent);
+    // await step.sleep("Generating review", 500);
+
+    tokenCount = openAiClient.countToken(fileContent);
 
     if (isFreeUser) {
       if (tokenCount < 20000) {
-        try {
-          const res = await openAiClient.chatgptModel(
-            SYSTEM_PROMPT.summary.header,
-            fileContent
-          );
+        await step.run("Summary for free user", async () => {
+          try {
+            const res = await openAiClient.chatgptModel(
+              SYSTEM_PROMPT.summary.header,
+              fileContent
+            );
+            if (res) {
+              const aiResp = JSON.parse(res);
 
-          const aiResp = JSON.parse(res as string);
+              console.log(aiResp);
 
-          console.log(aiResp);
+              await octokit.pulls.update({
+                owner: owner,
+                repo: repo,
+                pull_number: pull_number,
 
-          await octokit.pulls.update({
-            owner: owner,
-            repo: repo,
-            pull_number: pull_number,
-
-            body: aiResp.summary,
-          });
-        } catch (error) {
-          console.log(error);
-        }
-
-        return { char: fileContent.length, token: tokenCount };
+                body: aiResp.summary,
+              });
+            }
+          } catch (error) {
+            console.log(error);
+          }
+        });
       }
+      return { char: fileContent.length, token: tokenCount };
     }
-    if (tokenCount < 50000) {
-      const res = await openAiClient.chatgptModel(
-        SYSTEM_PROMPT.header,
-        fileContent
-      );
-      if (res) {
-        const aiResp = JSON.parse(res);
-        try {
-          await octokit.issues.createComment({
-            owner: owner,
-            repo: repo,
-            issue_number: pull_number,
-            body: aiResp.overall_review,
-          });
-        } catch (error) {
-          console.log(error);
-        }
 
-        await step.sleep("Generating line by line review", 500);
+    await step.run("AI review for paid users ", async () => {
+      if (tokenCount < 50000) {
+        const res = await openAiClient.chatgptModel(
+          SYSTEM_PROMPT.header,
+          fileContent
+        );
+        if (res) {
+          const aiResp = JSON.parse(res);
+          try {
+            await octokit.issues.createComment({
+              owner: owner,
+              repo: repo,
+              issue_number: pull_number,
+              body: aiResp.overall_review,
+            });
+          } catch (error) {
+            console.log(error);
+          }
 
-        try {
-          const response = await octokit.pulls.createReview({
-            owner: owner,
-            repo: repo,
-            pull_number: pull_number,
-            event: "COMMENT",
-            body: aiResp.critical_review.description,
-            comments: aiResp.critical_review.review,
-          });
-          console.log("Review created:", response.data);
-        } catch (error) {
-          console.log(error);
-        }
+          try {
+            const response = await octokit.pulls.createReview({
+              owner: owner,
+              repo: repo,
+              pull_number: pull_number,
+              event: "COMMENT",
+              body: aiResp.critical_review.description,
+              comments: aiResp.critical_review.review ,
+            });
+            console.log("Review created:", response.data);
+          } catch (error) {
+            console.log(error);
+          }
 
-        await step.sleep("updating pr description", 500);
-        try {
-          const summaryResponse = await openAiClient.chatgptModel(
-            SYSTEM_PROMPT.summary.header,
-            aiResp.overall_review
-          );
-          const parsedSummary = JSON.parse(summaryResponse as string);
-          console.log(parsedSummary);
-          await octokit.pulls.update({
-            owner: owner,
-            repo: repo,
-            pull_number: pull_number,
+          try {
+            const summaryResponse = await openAiClient.chatgptModel(
+              SYSTEM_PROMPT.summary.header,
+              aiResp.overall_review
+            );
+            if (summaryResponse) {
+              const parsedSummary = JSON.parse(summaryResponse);
+              console.log(parsedSummary);
+              await octokit.pulls.update({
+                owner: owner,
+                repo: repo,
+                pull_number: pull_number,
 
-            body: parsedSummary.summary,
-          });
-        } catch (error) {
-          console.log(error);
+                body: parsedSummary.summary,
+              });
+            }
+          } catch (error) {
+            console.log(error);
+          }
         }
       }
-    }
+    });
     // console.log()
     return { char: fileContent.length, token: tokenCount };
   }
