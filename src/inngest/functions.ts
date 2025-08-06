@@ -160,6 +160,8 @@ Hang tight – we’re reviewing your pull request to provide:
 
           const aiResp = JSON.parse(res as string);
 
+          console.log(aiResp);
+
           await octokit.pulls.update({
             owner: owner,
             repo: repo,
@@ -193,6 +195,7 @@ Hang tight – we’re reviewing your pull request to provide:
         }
 
         await step.sleep("Generating line by line review", 500);
+
         try {
           const response = await octokit.pulls.createReview({
             owner: owner,
@@ -214,6 +217,7 @@ Hang tight – we’re reviewing your pull request to provide:
             aiResp.overall_review
           );
           const parsedSummary = JSON.parse(summaryResponse as string);
+          console.log(parsedSummary);
           await octokit.pulls.update({
             owner: owner,
             repo: repo,
