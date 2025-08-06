@@ -59,7 +59,7 @@ const SYSTEM_PROMPT = {
   - Error: GitHub Mermaid parse error due to ":" in edge labels.
   - Fix: Removed or replaced ":" with descriptive words.
   - Never use " inside mermaid code it's said to be a critical error always use ' or \`
-  - Avoid using parenthesis
+  - Avoid using parenthesis there is not a single case where using parenthesis or curly brackets are allowed so never use them 
   - any use of any special character is forbidden
   - for er diagram each row has at most three items 
   -- first item : name of attribute

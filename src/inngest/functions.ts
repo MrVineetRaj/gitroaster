@@ -18,6 +18,7 @@ const excludedExtensions = [
   ".yml",
   ".toml",
   ".txt",
+  ".json",
   // video
   ".mp4",
   ".mov",
@@ -78,73 +79,62 @@ export const reviewGenerator = inngest.createFunction(
     });
 
     await step.run("Placeholder description", async () => {
-      await octokit.pulls.update({
-        owner: owner,
-        repo: repo,
-        pull_number: pull_number,
-
-        body: `
-  🔥 **GitRoaster is firing up!**
-  
-  Hang tight – we’re reviewing your pull request to provide:
-  
-  - 📝 Code walkthrough
-  - 🗂️ File change summaries
-  - 📈 Diagrams and insights
-  - 💡 Suggestions for improvements
-  
-  ⏳ **Your AI review will be ready shortly.**
-            `,
-      });
+          await octokit.pulls.update({
+            owner: owner,
+            repo: repo,
+            pull_number: pull_number,
+            body: `
+      🔥 **GitRoaster is firing up!**
+      Hang tight – we’re reviewing your pull request to provide:
+      - 📝 Code walkthrough
+      - 🗂️ File change summaries
+      - 📈 Diagrams and insights
+      - 💡 Suggestions for improvements
+      ⏳ **Your AI review will be ready shortly.**
+                `,
+          });
     });
 
     let fileContent: string = "";
-    await step.run("pre processing pr data", async () => {
-      const { data: files } = await octokit.pulls.listFiles({
-        owner: owner!,
-        repo: repo!,
-        pull_number: +pull_number!,
-      });
-
-      const { data: prData } = await octokit.pulls.get({
-        owner: owner!,
-        repo: repo!,
-        pull_number: +pull_number!,
-      });
-
-      const fileData: {
-        [filename: string]: string;
-      } = {};
-      const filenames = files
-        .map((file) => {
-          if (file.status !== "removed") {
-            fileData[file.filename] = file.patch ? file.patch : "";
-
-            return file.filename;
-          } else {
-            return "";
-          }
-        })
-        .filter((filename) => {
-          // Exclude migrations (by folder name)
-          if (!filename) return false;
-          if (filename.toLowerCase().includes("migration")) return false;
-          for (let i = 0; i < excludeFileWords.length; i++) {
-            if (filename.toLocaleLowerCase().includes(excludeFileWords[i]))
-              return false;
-          }
-
-          // Exclude by extension (case-insensitive)
-          return !excludedExtensions.some((ext) =>
-            filename.toLowerCase().endsWith(ext)
-          );
-        });
-
-      // let fileRead: string[] = [];
-      for (const file of filenames) {
-        fileContent += file + "\n" + fileData[file] + "\n\n";
-      }
+    // await step.run("pre processing pr data", async () => {
+    const { data: files } = await octokit.pulls.listFiles({
+      owner: owner!,
+      repo: repo!,
+      pull_number: +pull_number!,
     });
+
+    const fileData: {
+      [filename: string]: string;
+    } = {};
+    const filenames = files
+      .map((file) => {
+        if (file.status !== "removed") {
+          fileData[file.filename] = file.patch ? file.patch : "";
+
+          return file.filename;
+        } else {
+          return "";
+        }
+      })
+      .filter((filename) => {
+        // Exclude migrations (by folder name)
+        if (!filename) return false;
+        if (filename.toLowerCase().includes("migration")) return false;
+        for (let i = 0; i < excludeFileWords.length; i++) {
+          if (filename.toLocaleLowerCase().includes(excludeFileWords[i]))
+            return false;
+        }
+
+        // Exclude by extension (case-insensitive)
+        return !excludedExtensions.some((ext) =>
+          filename.toLowerCase().endsWith(ext)
+        );
+      });
+
+    // let fileRead: string[] = [];
+    for (const file of filenames) {
+      fileContent += file + "\n" + fileData[file] + "\n\n";
+    }
 
     const openAiClient = new OpenAIClient();
     let tokenCount = 0;
@@ -190,6 +180,7 @@ export const reviewGenerator = inngest.createFunction(
         );
         if (res) {
           const aiResp = JSON.parse(res);
+          
           try {
             await octokit.issues.createComment({
               owner: owner,
@@ -202,7 +193,7 @@ export const reviewGenerator = inngest.createFunction(
           }
 
           try {
-            const response = await octokit.pulls.createReview({
+         await octokit.pulls.createReview({
               owner: owner,
               repo: repo,
               pull_number: pull_number,
@@ -210,7 +201,7 @@ export const reviewGenerator = inngest.createFunction(
               body: aiResp.critical_review.description,
               comments: aiResp.critical_review.review ,
             });
-            console.log("Review created:", response.data);
+            
           } catch (error) {
             console.log(error);
           }
@@ -222,7 +213,7 @@ export const reviewGenerator = inngest.createFunction(
             );
             if (summaryResponse) {
               const parsedSummary = JSON.parse(summaryResponse);
-              console.log(parsedSummary);
+              // console.log(parsedSummary);
               await octokit.pulls.update({
                 owner: owner,
                 repo: repo,
