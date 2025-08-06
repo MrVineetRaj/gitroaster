@@ -163,7 +163,6 @@ export const razorPayRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { planId, member_count, orgname }, ctx }) => {
-      
       const username = ctx?.auth?.githubUsername!;
       try {
         const subscription = await razorpayInstance.createSubscription({
@@ -192,7 +191,7 @@ export const razorPayRouter = createTRPCRouter({
           },
         });
 
-        return { subscription };
+        return { shortUrl: subscription.short_url };
       } catch (error) {
         console.log(error);
       }

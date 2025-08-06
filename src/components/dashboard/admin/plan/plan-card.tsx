@@ -43,7 +43,7 @@ interface Props {
 const PlanCard = ({ plan, isAdminPage, currentPlan }: Props) => {
   const CurrencyIcon = CurrencyShortIcon[plan.currency];
   const router = useRouter();
-  const {defaultOrg} = useAuthStore()
+  const { defaultOrg } = useAuthStore();
 
   const trpc = useTRPC();
   const toggleActivePlanStatus = useMutation(
@@ -174,11 +174,17 @@ const PlanCard = ({ plan, isAdminPage, currentPlan }: Props) => {
                 if (currentPlan) {
                   router.push("/dashboard/billing?tab=billing");
                 } else {
-                  createSubscription.mutateAsync({
-                    planId: plan.planId,
-                    member_count: 1,
-                    orgname:defaultOrg
-                  });
+                  createSubscription
+                    .mutateAsync({
+                      planId: plan.planId,
+                      member_count: 1,
+                      orgname: defaultOrg,
+                    })
+                    .then((res) => {
+                      if (res?.shortUrl) {
+                        window.open(res?.shortUrl, "_blank");
+                      }
+                    });
                 }
               }}
               variant={currentPlan ? "outline" : "default"}

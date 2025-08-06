@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  console.log(data.event);
+
   if (
     data?.contains?.includes("subscription") &&
     data?.contains?.includes("payment")
