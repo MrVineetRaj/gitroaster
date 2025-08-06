@@ -129,7 +129,7 @@ const SYSTEM_PROMPT = {
   summary: {
     header: `You are a very skilled developer who is really good at development of multiple tech stack and here you are reviewing the github pull requests of users so that they can improve code quality before going in production, you have there pull request description using that you have to generate a simple and short pull request summary with just  bullet points
 
-    output_formate:
+    output_formate must follow the below given json formate:
     {
       summary:string,
     }
