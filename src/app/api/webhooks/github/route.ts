@@ -86,7 +86,7 @@ export const POST = async (req: NextRequest) => {
       }
     | {
         success: boolean;
-        data: any;
+        data: object;
         message: string;
         owner: string;
         repo: string;
@@ -120,7 +120,7 @@ export const POST = async (req: NextRequest) => {
 
   console.log("prDiffResponse new org", prDiffResponse);
 
-  let { owner, repo, pull_number } = prDiffResponse;
+  const { owner, repo, pull_number } = prDiffResponse;
 
   const octokit = new Octokit({
     authStrategy: createAppAuth,
@@ -139,8 +139,6 @@ export const POST = async (req: NextRequest) => {
 
   const author = prData.user?.login;
 
-  // Todo : Plan filter here
-
   // console.log(author);
   // let isLargePr = false;
   if (!prDiffResponse.data) {
@@ -148,6 +146,62 @@ export const POST = async (req: NextRequest) => {
       { message: "INVALID_SECRET_KEY" },
       { status: 401 }
     );
+  }
+
+  const isAllowed = await db.userAsMemberAndOrg.findUnique({
+    where: {
+      isAllowed: true,
+      orgname_teamMemberUsername: {
+        orgname: owner!,
+        teamMemberUsername: author,
+      },
+    },
+  });
+
+  if (!isAllowed) {
+    return NextResponse.json({ message: "Webhook processed successfully" });
+  }
+
+  const currDate = new Date();
+  const subscription = await db.subscription.findFirst({
+    where: {
+      orgname: owner!,
+      AND: [
+        {
+          cycleStart: {
+            lte: currDate,
+          },
+        },
+        {
+          cycleEnd: {
+            gte: currDate,
+          },
+        },
+      ],
+      status: "active",
+    },
+    include: {
+      plan: true,
+    },
+  });
+
+  if (!subscription) {
+    return NextResponse.json({ message: "Webhook processed successfully" });
+  }
+
+  const allowedMemberCount = await db.userAsMemberAndOrg.count({
+    where: {
+      isAllowed: true,
+      orgname: owner!,
+    },
+  });
+
+  if (
+    subscription?.plan.name.toLowerCase().split(" ").join("_") === "pro_plan" &&
+    allowedMemberCount > 5
+  ) {
+    // todo : Send mail to owner of org
+    return NextResponse.json({ message: "Webhook processed successfully" });
   }
 
   // if (diff_data_as_string.length / 4 > TOKEN_CAP) {

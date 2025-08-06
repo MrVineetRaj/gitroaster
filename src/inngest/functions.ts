@@ -132,7 +132,7 @@ Hang tight – we’re reviewing your pull request to provide:
       });
 
     let fileContent: string = "";
-    let fileRead: string[] = [];
+    // let fileRead: string[] = [];
     for (const file of filenames) {
       fileContent += file + "\n" + fileData[file] + "\n\n";
     }

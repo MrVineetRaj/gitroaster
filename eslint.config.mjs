@@ -17,6 +17,7 @@ const eslintConfig = [
   {
     rules: {
       "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
+      "@typescript-eslint/no-unused-vars": "off",
     },
   },
 ];

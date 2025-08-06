@@ -5,7 +5,7 @@ import { razorpayActions } from "@/modules/razorpay/utils";
 export async function POST(req: NextRequest) {
   // Todo : implement flow for updating subscription access
   const data = await req.json();
-  console.log(data);
+  // console.log(data);
   const signatureFromRazorPay = req.headers.get("X-Razorpay-Signature");
 
   if (!signatureFromRazorPay) {
@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
       message: "Signature not found",
     });
   }
+
   const RAZORPAY_WEBHOOK_SECREt = process.env.RAZORPAY_WEBHOOK_SECREt!;
 
   const isValid = validateWebhookSignature(
@@ -30,18 +31,18 @@ export async function POST(req: NextRequest) {
   }
 
   if (
-    data.contains.includes("subscription") &&
-    data.contains.includes("payment")
+    data?.contains?.includes("subscription") &&
+    data?.contains?.includes("payment")
   ) {
-    razorpayActions.upsertSubscriptionDetails(
+    await razorpayActions.upsertSubscriptionDetails(
       true,
-      data.payload.subscription.entity,
-      data.payload.payment.entity
+      data?.payload?.subscription?.entity,
+      data?.payload?.payment?.entity
     );
   } else if (data.contains.includes("subscription")) {
-    razorpayActions.upsertSubscriptionDetails(
+    await razorpayActions.upsertSubscriptionDetails(
       false,
-      data.payload.subscription.entity
+      data?.payload?.subscription?.entity
     );
   }
 
