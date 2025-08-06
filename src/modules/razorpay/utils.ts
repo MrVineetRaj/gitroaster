@@ -68,8 +68,8 @@ export class RazorpayActions {
         cycleStart: subscription.current_start
           ? new Date(+subscription.current_start * 1000)
           : null,
-        cycleEnd: subscription.current_start
-          ? new Date(+subscription.current_start * 1000)
+        cycleEnd: subscription.current_end
+          ? new Date(+subscription.current_end * 1000)
           : null,
         upcomingPayment: subscription.charge_at
           ? new Date(+subscription.charge_at * 1000)
