@@ -189,6 +189,7 @@ export const POST = async (req: NextRequest) => {
   console.log("subscription :", subscription);
 
   if (!subscription) {
+    console.log("Going Here");
     await inngest.send({
       name: "app/review-generator",
       data: {
@@ -271,6 +272,7 @@ export const POST = async (req: NextRequest) => {
         repo,
         pull_number,
         author: prData.user?.login,
+        isFreeUser: false,
         // data: diff_data_as_string,
         // filenames: filenames,
         // isLargePr: isLargePr,
