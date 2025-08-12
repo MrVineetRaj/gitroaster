@@ -111,4 +111,34 @@ export const teamRouter = createTRPCRouter({
         });
       }
     }),
+
+  toggleMemberAccess: protectedProcedure
+    .input(
+      z.object({
+        orgname: z.string(),
+        teamMemberUsername: z.string(),
+        isAllowed: z.boolean(),
+      })
+    )
+    .mutation(async ({ input: { orgname, teamMemberUsername, isAllowed } }) => {
+      try {
+        await db.userAsMemberAndOrg.update({
+          where: {
+            orgname_teamMemberUsername: {
+              orgname,
+              teamMemberUsername,
+            },
+          },
+          data: {
+            isAllowed,
+          },
+        });
+      } catch (error) {
+        console.log(error);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Something wrong try again later",
+        });
+      }
+    }),
 });

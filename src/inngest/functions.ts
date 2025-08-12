@@ -79,11 +79,11 @@ export const reviewGenerator = inngest.createFunction(
     });
 
     await step.run("Placeholder description", async () => {
-          await octokit.pulls.update({
-            owner: owner,
-            repo: repo,
-            pull_number: pull_number,
-            body: `
+      await octokit.pulls.update({
+        owner: owner,
+        repo: repo,
+        pull_number: pull_number,
+        body: `
       🔥 **GitRoaster is firing up!**
       Hang tight – we’re reviewing your pull request to provide:
       - 📝 Code walkthrough
@@ -92,7 +92,7 @@ export const reviewGenerator = inngest.createFunction(
       - 💡 Suggestions for improvements
       ⏳ **Your AI review will be ready shortly.**
                 `,
-          });
+      });
     });
 
     let fileContent: string = "";
@@ -168,6 +168,30 @@ export const reviewGenerator = inngest.createFunction(
             console.log(error);
           }
         });
+      } else {
+        await step.run(
+          "Summary for free user for large pull request",
+          async () => {
+            try {
+              const res = await openAiClient.chatgptModel(
+                SYSTEM_PROMPT.largePullRequests,
+                JSON.stringify(filenames)
+              );
+              if (res) {
+                const aiResp = JSON.parse(res);
+
+                await octokit.pulls.update({
+                  owner: owner,
+                  repo: repo,
+                  pull_number: pull_number,
+                  body: aiResp.summary,
+                });
+              }
+            } catch (error) {
+              console.log(error);
+            }
+          }
+        );
       }
       return { char: fileContent.length, token: tokenCount };
     }
@@ -180,7 +204,7 @@ export const reviewGenerator = inngest.createFunction(
         );
         if (res) {
           const aiResp = JSON.parse(res);
-          
+
           try {
             await octokit.issues.createComment({
               owner: owner,
@@ -193,15 +217,14 @@ export const reviewGenerator = inngest.createFunction(
           }
 
           try {
-         await octokit.pulls.createReview({
+            await octokit.pulls.createReview({
               owner: owner,
               repo: repo,
               pull_number: pull_number,
               event: "COMMENT",
               body: aiResp.critical_review.description,
-              comments: aiResp.critical_review.review ,
+              comments: aiResp.critical_review.review,
             });
-            
           } catch (error) {
             console.log(error);
           }
@@ -226,6 +249,30 @@ export const reviewGenerator = inngest.createFunction(
             console.log(error);
           }
         }
+      } else {
+        await step.run(
+          "Summary for paid users for large pull request",
+          async () => {
+            try {
+              const res = await openAiClient.chatgptModel(
+                SYSTEM_PROMPT.largePullRequests,
+                JSON.stringify(filenames)
+              );
+              if (res) {
+                const aiResp = JSON.parse(res);
+
+                await octokit.pulls.update({
+                  owner: owner,
+                  repo: repo,
+                  pull_number: pull_number,
+                  body: aiResp.summary,
+                });
+              }
+            } catch (error) {
+              console.log(error);
+            }
+          }
+        );
       }
     });
     // console.log()
