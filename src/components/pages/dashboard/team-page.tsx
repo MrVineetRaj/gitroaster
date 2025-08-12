@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 export const ManageTeam = () => {
   const { defaultOrg, username } = useAuthStore();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [openModel, setOpenModel] = useState<boolean>(false);
   const { data: members, isPending: loadingMembers } = useQuery(
     trpc.teamRouter.getTeamMembers.queryOptions({
@@ -39,6 +40,26 @@ export const ManageTeam = () => {
       onSuccess: () => {
         setOpenModel(false);
         toast.success("Invitation Sent");
+      },
+    })
+  );
+
+  const toggleMemberAccess = useMutation(
+    trpc.teamRouter.toggleMemberAccess.mutationOptions({
+      onSuccess: () => {
+        toast.success("Member access updated successfully", {
+          id: "member-access-update",
+        });
+        queryClient.invalidateQueries(
+          trpc.teamRouter.getTeamMembers.queryOptions({
+            orgname: defaultOrg,
+          })
+        );
+      },
+      onError: (error) => {
+        toast.error("Failed to update member access: " + error.message, {
+          id: "member-access-update",
+        });
       },
     })
   );
@@ -62,7 +83,7 @@ export const ManageTeam = () => {
             }}
             className="bg-accent/30 px-4 py-2 rounded-md border"
           >
-            <span >Invite Member</span>
+            <span>Invite Member</span>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -145,6 +166,16 @@ export const ManageTeam = () => {
                   <Button disabled={true}>Admin</Button>
                 ) : (
                   <Button
+                    onClick={() => {
+                      toast.loading("Updating member access", {
+                        id: "member-access-update",
+                      });
+                      toggleMemberAccess.mutateAsync({
+                        orgname: defaultOrg,
+                        teamMemberUsername: member?.teamMemberUsername,
+                        isAllowed: !member?.isAllowed,
+                      });
+                    }}
                     className={cn(
                       "",
                       member?.isAllowed
@@ -344,7 +375,6 @@ export const ManageInvitations = () => {
   );
 };
 export const TeamPage = () => {
-  
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-card border-b">
@@ -361,7 +391,7 @@ export const TeamPage = () => {
       </div>
 
       <div className="mt-2 p-4">
-        <Tabs defaultValue="invitations">
+        <Tabs defaultValue="team">
           <TabsList>
             <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="orgs">Orgs</TabsTrigger>
