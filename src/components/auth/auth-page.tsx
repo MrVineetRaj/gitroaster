@@ -13,10 +13,10 @@ const OAUTH_OPTIONS: {
     icon: GithubIcon,
     platformName: "github",
   },
-  {
-    icon: GitlabIcon,
-    platformName: "gitlab",
-  },
+  // {
+  //   icon: GitlabIcon,
+  //   platformName: "gitlab",
+  // },
 ];
 
 /**
@@ -31,6 +31,7 @@ const AuthenticationPage = () => {
           const Icon = option.icon;
           return (
             <form
+              className="shadow-lg shadow-black border border-border rounded-lg flex items-center justify-center gap-4"
               action={async () => {
                 "use server";
                 await signIn(option?.platformName);
@@ -38,7 +39,7 @@ const AuthenticationPage = () => {
               key={option?.platformName}
             >
               <Button
-                className="!bg-white font-bold !px-4 !py-2 active:scale-90 shadow-lg min-w-72"
+                className="!bg-white font-bold !px-4 !py-2 active:scale-90 min-w-72"
                 type="submit"
               >
                 <Icon className="size-6" />
@@ -52,6 +53,5 @@ const AuthenticationPage = () => {
     </div>
   );
 };
-
 
 export { AuthenticationPage };

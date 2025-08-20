@@ -1,7 +1,24 @@
-import React from "react";
+import {
+  RepositoriesPageLoader,
+  RepositoriesPage,
+} from "@/components/pages/dashboard/repositories-page";
+import { Metadata } from "next";
+
+import React, { Suspense } from "react";
+
+export const metadata: Metadata = {
+  title: "Dashboard | GitRoaster",
+  description: "Manage your repositories and pull requests",
+};
 
 const Page = () => {
-  return <div>Page</div>;
+  return (
+    <div className="w-full bg-background h-screen ">
+      <Suspense fallback={<RepositoriesPageLoader />}>
+        <RepositoriesPage />
+      </Suspense>
+    </div>
+  );
 };
 
 export default Page;

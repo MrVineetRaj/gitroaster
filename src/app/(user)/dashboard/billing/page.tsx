@@ -1,5 +1,11 @@
 import { BillingPage } from "@/components/pages/dashboard/billing-page";
+import { Metadata } from "next";
 import React from "react";
+
+export const metadata: Metadata = {
+  title: "Billing | GitRoaster",
+  description: "Manage your team ",
+};
 
 const Page = () => {
   return (

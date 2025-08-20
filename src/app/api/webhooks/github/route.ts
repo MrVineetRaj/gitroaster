@@ -188,8 +188,27 @@ export const POST = async (req: NextRequest) => {
 
   console.log("subscription :", subscription);
 
-  if (!subscription) {
-    console.log("Going Here");
+  const orgDataFromDb = await db.orgRepo.findUnique({
+    where: {
+      orgname: owner!,
+      repoFullName: `${owner!}/${repo!}`,
+    },
+  });
+
+  await db.pullRequest.create({
+    data: {
+      ownerUsername: orgDataFromDb?.ownerUsername!,
+      repoFullName: `${owner!}/${repo!}`,
+      orgname: owner!,
+      author: author,
+      pullNumber: +pull_number!,
+      timeTakenToReview: 0,
+    },
+  });
+
+  if (!subscription || (subscription && subscription?.status !== "active")) {
+    // todo : implement trial logic here
+    // todo : if trial is not found continue this block else continue to next block
     await inngest.send({
       name: "app/review-generator",
       data: {
@@ -212,23 +231,23 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json({ message: "Webhook processed successfully" });
   }
 
-  const allowedMemberCount = await db.userAsMemberAndOrg.count({
-    where: {
-      isAllowed: true,
-      orgname: owner!,
-    },
-  });
+  // const allowedMemberCount = await db.userAsMemberAndOrg.count({
+  //   where: {
+  //     isAllowed: true,
+  //     orgname: owner!,
+  //   },
+  // });
 
-  console.log("allowedMemberCount :", allowedMemberCount);
+  // console.log("allowedMemberCount :", allowedMemberCount);
 
-  if (
-    subscription?.plan.name.toLowerCase().split(" ").join("_") === "pro_plan" &&
-    allowedMemberCount > 5
-  ) {
-    console.log("not allowedMemberCount :");
-    // todo : Send mail to owner of org
-    return NextResponse.json({ message: "Webhook processed successfully" });
-  }
+  // if (
+  //   subscription?.plan.name.toLowerCase().split(" ").join("_") === "pro_plan" &&
+  //   allowedMemberCount > 5
+  // ) {
+  //   console.log("not allowedMemberCount :");
+  //   // todo : Send mail to owner of org
+  //   return NextResponse.json({ message: "Webhook processed successfully" });
+  // }
 
   // if (diff_data_as_string.length / 4 > TOKEN_CAP) {
   //   isLargePr = true;
@@ -262,7 +281,7 @@ export const POST = async (req: NextRequest) => {
   //   },
   // });
 
-  console.log("inngest running :");
+  // console.log("inngest running :");
   await inngest.send({
     name: "app/review-generator",
     data: {
@@ -273,6 +292,8 @@ export const POST = async (req: NextRequest) => {
         pull_number,
         author: prData.user?.login,
         isFreeUser: false,
+        ownerUsername: orgDataFromDb?.ownerUsername!,
+        currTime: Date.now(),
         // data: diff_data_as_string,
         // filenames: filenames,
         // isLargePr: isLargePr,
