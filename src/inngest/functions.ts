@@ -4,6 +4,9 @@ import { createAppAuth } from "@octokit/auth-app";
 import fs from "fs";
 import { OpenAIClient } from "@/lib/openai";
 import { SYSTEM_PROMPT } from "@/constants/prompts";
+import { db } from "@/lib/prisma";
+import { envKeys } from "inngest/helpers/consts";
+import { PullRequestStatus } from "@/generated/prisma";
 const excludedExtensions = [
   // images
   ".png",
@@ -58,17 +61,20 @@ export const reviewGenerator = inngest.createFunction(
       `Function started - Event ID: ${eventId}, Count: ${triggerCount++}`
     );
 
+    // console.log(event?.data);
+
     const {
-      payload: {
-        installation_id,
-        owner,
-        repo,
-        pull_number,
-        author,
-        isFreeUser,
-      },
+      installation_id,
+      owner,
+      repo,
+      pull_number,
+      author,
+      isFreeUser,
+      ownerUsername,
+      currTime,
     } = event?.data;
 
+    
     const octokit = new Octokit({
       authStrategy: createAppAuth,
       auth: {
@@ -193,6 +199,29 @@ export const reviewGenerator = inngest.createFunction(
           }
         );
       }
+
+      await db.pullRequest.upsert({
+        where: {
+          repoFullName_pullNumber: {
+            repoFullName: `${owner!}/${repo!}`,
+            pullNumber: +pull_number!,
+          },
+        },
+        update: {
+          timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+        },
+        create: {
+          ownerUsername,
+          orgname: owner,
+          repoFullName: `${owner!}/${repo!}`,
+          pullNumber: +pull_number!,
+          timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+          author,
+          charCount: fileContent.length,
+          tokenCount: tokenCount,
+          status:PullRequestStatus.SUCCESS
+        },
+      });
       return { char: fileContent.length, token: tokenCount };
     }
 
@@ -274,8 +303,33 @@ export const reviewGenerator = inngest.createFunction(
           }
         );
       }
+
+      await db.pullRequest.upsert({
+        where: {
+          repoFullName_pullNumber: {
+            repoFullName: `${owner!}/${repo!}`,
+            pullNumber: +pull_number!,
+          },
+        },
+        update: {
+          timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+        },
+        create: {
+          ownerUsername,
+          orgname: owner,
+          repoFullName: `${owner!}/${repo!}`,
+          pullNumber: +pull_number!,
+          timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+          author,
+          charCount: fileContent.length,
+          tokenCount: tokenCount,
+          status:PullRequestStatus.SUCCESS
+        },
+      });
     });
     // console.log()
+    
     return { char: fileContent.length, token: tokenCount };
+    
   }
 );

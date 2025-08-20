@@ -2,7 +2,13 @@ import {
   RepositoriesPageLoader,
   RepositoriesPage,
 } from "@/components/pages/dashboard/repositories-page";
+import { Metadata } from "next";
 import React, { Suspense } from "react";
+
+export const metadata: Metadata = {
+  title: "Repositories | GitRoaster",
+  description: "Manage your repositories and pull requests",
+};
 
 const Page = () => {
   return (
@@ -15,4 +21,3 @@ const Page = () => {
 };
 
 export default Page;
-

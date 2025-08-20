@@ -23,7 +23,8 @@ import {
 import Link from "next/link";
 
 import { Button } from "../ui/button";
-import { signOut } from "@/auth";
+// import { signOut } from "@/auth";
+import { signOut } from "next-auth/react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -194,7 +195,7 @@ export const DashboardSidebar = ({
             )}
           >
             <div className="flex items-center gap-3">
-              <div className="relative">
+              <Link href={"/"} className="relative">
                 <Image
                   width={isCollapsed ? 32 : 40}
                   height={isCollapsed ? 32 : 40}
@@ -203,17 +204,17 @@ export const DashboardSidebar = ({
                   className="rounded-lg transition-all duration-300"
                 />
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
-              </div>
+              </Link>
 
               {!isCollapsed && (
-                <div className="flex-1 min-w-0">
+                <Link href={"/"} className="flex-1 min-w-0">
                   <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     GitRoaster
                   </h2>
                   <p className="text-xs text-muted-foreground truncate">
                     AI Code Review Workspace
                   </p>
-                </div>
+                </Link>
               )}
 
               <Button

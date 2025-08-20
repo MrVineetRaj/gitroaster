@@ -109,6 +109,8 @@ model PullRequest {
   pullNumber Int
   status PullRequestStatus @default(PENDING)
   timeTakenToReview Int
+  charCount Int @default(0)
+  tokenCount Int @default(0)
   
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())

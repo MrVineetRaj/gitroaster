@@ -1,5 +1,11 @@
 import { TeamPage } from "@/components/pages/dashboard/team-page";
+import { Metadata } from "next";
 import React from "react";
+
+export const metadata: Metadata = {
+  title: "Team | GitRoaster",
+  description: "Manage your team ",
+};
 
 const Page = () => {
   return (
