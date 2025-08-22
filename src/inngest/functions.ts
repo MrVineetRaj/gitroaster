@@ -64,17 +64,18 @@ export const reviewGenerator = inngest.createFunction(
     // console.log(event?.data);
 
     const {
-      installation_id,
-      owner,
-      repo,
-      pull_number,
-      author,
-      isFreeUser,
-      ownerUsername,
-      currTime,
+      payload: {
+        installation_id,
+        owner,
+        repo,
+        pull_number,
+        author,
+        isFreeUser,
+        ownerUsername,
+        currTime,
+      },
     } = event?.data;
 
-    
     const octokit = new Octokit({
       authStrategy: createAppAuth,
       auth: {
@@ -219,7 +220,7 @@ export const reviewGenerator = inngest.createFunction(
           author,
           charCount: fileContent.length,
           tokenCount: tokenCount,
-          status:PullRequestStatus.SUCCESS
+          status: PullRequestStatus.SUCCESS,
         },
       });
       return { char: fileContent.length, token: tokenCount };
@@ -323,13 +324,12 @@ export const reviewGenerator = inngest.createFunction(
           author,
           charCount: fileContent.length,
           tokenCount: tokenCount,
-          status:PullRequestStatus.SUCCESS
+          status: PullRequestStatus.SUCCESS,
         },
       });
     });
     // console.log()
-    
+
     return { char: fileContent.length, token: tokenCount };
-    
   }
 );
