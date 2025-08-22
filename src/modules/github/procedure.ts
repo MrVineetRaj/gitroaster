@@ -37,7 +37,7 @@ export const githubRouter = createTRPCRouter({
           },
         });
       } catch (error) {
-        console.log(error);
+        // console.log(error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to connect repo try again later",

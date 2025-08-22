@@ -160,7 +160,7 @@ export const reviewGenerator = inngest.createFunction(
             if (res) {
               const aiResp = JSON.parse(res);
 
-              console.log(aiResp);
+              // console.log(aiResp);
 
               await octokit.pulls.update({
                 owner: owner,
@@ -171,7 +171,7 @@ export const reviewGenerator = inngest.createFunction(
               });
             }
           } catch (error) {
-            console.log(error);
+            // console.log(error);
           }
         });
       } else {
@@ -194,7 +194,7 @@ export const reviewGenerator = inngest.createFunction(
                 });
               }
             } catch (error) {
-              console.log(error);
+              // console.log(error);
             }
           }
         );
@@ -242,7 +242,7 @@ export const reviewGenerator = inngest.createFunction(
               body: aiResp.overall_review,
             });
           } catch (error) {
-            console.log(error);
+            // console.log(error);
           }
 
           try {
@@ -255,7 +255,7 @@ export const reviewGenerator = inngest.createFunction(
               comments: aiResp.critical_review.review,
             });
           } catch (error) {
-            console.log(error);
+            // console.log(error);
           }
 
           try {
@@ -275,7 +275,7 @@ export const reviewGenerator = inngest.createFunction(
               });
             }
           } catch (error) {
-            console.log(error);
+            // console.log(error);
           }
         }
       } else {
@@ -298,7 +298,7 @@ export const reviewGenerator = inngest.createFunction(
                 });
               }
             } catch (error) {
-              console.log(error);
+              // console.log(error);
             }
           }
         );

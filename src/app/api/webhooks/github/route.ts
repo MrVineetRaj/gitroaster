@@ -160,7 +160,7 @@ export const POST = async (req: NextRequest) => {
 
   console.log("isAllowed :", isAllowed);
   if (!isAllowed) {
-    return NextResponse.json({ message: "Webhook processed successfully" });
+    return NextResponse.json({ message: "Author wasn't allowed" });
   }
 
   const currDate = new Date();
@@ -195,6 +195,10 @@ export const POST = async (req: NextRequest) => {
     },
   });
 
+  if (!orgDataFromDb) {
+    return NextResponse.json({ message: "No org data found" });
+  }
+
   await db.pullRequest.create({
     data: {
       ownerUsername: orgDataFromDb?.ownerUsername!,
@@ -206,82 +210,56 @@ export const POST = async (req: NextRequest) => {
     },
   });
 
+  const user = await db.user.findUnique({
+    where: {
+      username: orgDataFromDb?.ownerUsername,
+    },
+  });
+
+  let onTrial = false;
+  if (!user) {
+    return NextResponse.json({ message: "No user found" });
+  }
+
+  onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
+
   if (!subscription || (subscription && subscription?.status !== "active")) {
-    // todo : implement trial logic here
-    // todo : if trial is not found continue this block else continue to next block
-    await inngest.send({
-      name: "app/review-generator",
-      data: {
-        payload: {
-          installation_id: installation_id,
-          owner,
-          repo,
-          pull_number,
-          author: prData.user?.login,
-          isFreeUser: true,
-          // data: diff_data_as_string,
-          // filenames: filenames,
-          // isLargePr: isLargePr,
-          // executionStartedAt: currTime,
-          // description_id: prData.id,
-          // hash_sha: prData.head.sha,
+    if (onTrial) {
+      await inngest.send({
+        name: "app/review-generator",
+        data: {
+          payload: {
+            installation_id: installation_id,
+            owner,
+            repo,
+            pull_number,
+            author: prData.user?.login,
+            isFreeUser: false,
+            ownerUsername: orgDataFromDb?.ownerUsername!,
+            currTime: Date.now(),
+          },
         },
-      },
-    });
+      });
+    } else {
+      await inngest.send({
+        name: "app/review-generator",
+        data: {
+          payload: {
+            installation_id: installation_id,
+            owner,
+            repo,
+            pull_number,
+            author: prData.user?.login,
+            isFreeUser: true,
+            ownerUsername: orgDataFromDb?.ownerUsername!,
+            currTime: Date.now(),
+          },
+        },
+      });
+    }
     return NextResponse.json({ message: "Webhook processed successfully" });
   }
 
-  // const allowedMemberCount = await db.userAsMemberAndOrg.count({
-  //   where: {
-  //     isAllowed: true,
-  //     orgname: owner!,
-  //   },
-  // });
-
-  // console.log("allowedMemberCount :", allowedMemberCount);
-
-  // if (
-  //   subscription?.plan.name.toLowerCase().split(" ").join("_") === "pro_plan" &&
-  //   allowedMemberCount > 5
-  // ) {
-  //   console.log("not allowedMemberCount :");
-  //   // todo : Send mail to owner of org
-  //   return NextResponse.json({ message: "Webhook processed successfully" });
-  // }
-
-  // if (diff_data_as_string.length / 4 > TOKEN_CAP) {
-  //   isLargePr = true;
-
-  //   diff_data_as_string = "";
-  // }
-
-  // const { data: files } = await octokit.pulls.listFiles({
-  //   owner: owner!,
-  //   repo: repo!,
-  //   pull_number: +pull_number!,
-  // });
-
-  // const filenames = files.map((file) => file.filename);
-
-  // const { data: prData } = await octokit.pulls.get({
-  //   owner: owner!,
-  //   repo: repo!,
-  //   pull_number: +pull_number!,
-  // });
-
-  // await db.pullRequestReview.create({
-  //   data: {
-  //     repoFullName: `${owner!}/${repo!}`,
-  //     authorUsername: prData.user?.login,
-  //     ownerUsername: author!,
-  //     prNumber: +pull_number!,
-  //     title: prData.title,
-  //     reviewedAt: new Date(currTime + 60 * 1000),
-  //     timeTaken: 0,
-  //   },
-  // });
-
-  // console.log("inngest running :");
   await inngest.send({
     name: "app/review-generator",
     data: {
@@ -294,12 +272,6 @@ export const POST = async (req: NextRequest) => {
         isFreeUser: false,
         ownerUsername: orgDataFromDb?.ownerUsername!,
         currTime: Date.now(),
-        // data: diff_data_as_string,
-        // filenames: filenames,
-        // isLargePr: isLargePr,
-        // executionStartedAt: currTime,
-        // description_id: prData.id,
-        // hash_sha: prData.head.sha,
       },
     },
   });

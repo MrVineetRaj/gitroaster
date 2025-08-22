@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  console.log(data.event);
+  // console.log(data.event);
 
   if (
     data?.contains?.includes("subscription") &&

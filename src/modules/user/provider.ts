@@ -7,58 +7,76 @@ import { TRPCError } from "@trpc/server";
 
 export const userRouter = createTRPCRouter({
   syncUser: protectedProcedure.query(async ({ ctx }) => {
-    const data = await db.user.findUnique({
-      where: {
-        username: ctx.auth?.githubUsername,
-      },
-      include: {
-        subscriptions: true,
-        installationId: true,
-      },
-    });
-    if (data) {
-      const {
-        installationId: installationIds = [],
-        subscriptions = [],
-        ...existingUser
-      } = data;
+    try {
+      const data = await db.user.findUnique({
+        where: {
+          username: ctx.auth?.githubUsername,
+        },
+        include: {
+          subscriptions: true,
+          installationId: true,
+        },
+      });
+      if (data) {
+        console.log("old user", data);
+        const {
+          installationId: installationIds = [],
+          subscriptions = [],
+          ...existingUser
+        } = data;
 
-      const subscription = subscriptions.filter((subscription) => {
-        return subscription.orgname === existingUser.defaultOrg;
+        const subscription = subscriptions.filter((subscription) => {
+          return subscription.orgname === existingUser.defaultOrg;
+        });
+
+        const installationId = installationIds.filter((item) => {
+          return item.orgname === existingUser.defaultOrg;
+        });
+
+        return {
+          user: existingUser,
+          subscription: subscription[0] || {},
+          installationId: installationId[0]?.installationId ?? "",
+        };
+      }
+
+      const currDate = new Date();
+      const trialStartAt = currDate;
+      const trialEndAt = new Date(currDate.getTime() + 8 * 24 * 60 * 60 * 1000);
+      trialEndAt.setHours(0, 0, 0, 0);
+
+      const user = await db.user.create({
+        data: {
+          username: ctx?.auth?.githubUsername!,
+          email: ctx?.auth?.user?.email!,
+          defaultOrg: ctx?.auth?.githubUsername!,
+          trialStartAt,
+          trialEndAt,
+        },
       });
 
-      const installationId = installationIds.filter((item) => {
-        return item.orgname === existingUser.defaultOrg;
+      await db.userAsMemberAndOrg.create({
+        data: {
+          orgname: user.defaultOrg,
+          teamMemberUsername: user.username,
+          isAllowed: true,
+        },
       });
+
+      console.log("new user", user);
 
       return {
-        user: existingUser,
-        subscription: subscription[0] || {},
-        installationId: installationId[0]?.installationId ?? "",
+        user,
+        subscription: {},
+        installationId: "",
       };
+    } catch (error) {
+      console.log(error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Something went wrong",
+      });
     }
-
-    const user = await db.user.create({
-      data: {
-        username: ctx?.auth?.githubUsername!,
-        email: ctx?.auth?.user?.email!,
-        defaultOrg: ctx?.auth?.githubUsername!,
-      },
-    });
-
-    await db.userAsMemberAndOrg.create({
-      data: {
-        orgname: user.defaultOrg,
-        teamMemberUsername: user.username,
-        isAllowed: true,
-      },
-    });
-
-    return {
-      user,
-      subscription: {},
-      installationId: "",
-    };
   }),
   updateInstallationId: protectedProcedure
     .input(
@@ -86,6 +104,7 @@ export const userRouter = createTRPCRouter({
           },
         });
 
+        console.log("new userInstallationId", userInstallationId);
         return { success: true, data: userInstallationId };
       } catch (error) {
         throw new TRPCError({

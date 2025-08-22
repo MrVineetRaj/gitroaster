@@ -24,33 +24,43 @@ class GithubOctokit {
     orgname: string,
     installationId: string
   ) {
+    console.log("installationId", username, installationId, installationId);
     const appOctokit = this.appOctokit;
 
     if (username === orgname) {
-      try {
-        const tokenResponse = await appOctokit.request(
-          "POST /app/installations/{installation_id}/access_tokens",
-          { installation_id: Number(installationId) }
-        );
+      let installationFound = false;
+      if (installationId != "00000") {
+        try {
+          const tokenResponse = await appOctokit.request(
+            "POST /app/installations/{installation_id}/access_tokens",
+            { installation_id: Number(installationId) }
+          );
 
-        const installationAccessToken = tokenResponse.data.token;
+          const installationAccessToken = tokenResponse.data.token;
 
-        const installationOctokit = new Octokit({
-          auth: installationAccessToken,
-        });
+          const installationOctokit = new Octokit({
+            auth: installationAccessToken,
+          });
 
-        const reposResponse =
-          await installationOctokit.apps.listReposAccessibleToInstallation();
+          const reposResponse =
+            await installationOctokit.apps.listReposAccessibleToInstallation();
 
-        const repos: GitHubRepo[] = reposResponse.data
-          .repositories as GitHubRepo[];
+          const repos: GitHubRepo[] = reposResponse.data
+            .repositories as GitHubRepo[];
 
-        return {
-          success: true,
-          message: "INSTALLATION_FOUND",
-          repos: repos,
-        };
-      } catch (error) {
+          return {
+            success: true,
+            message: "INSTALLATION_FOUND",
+            repos: repos,
+            installationIdFromGithub: installationId,
+          };
+        } catch (error) {
+          return {
+            success: false,
+            message: "INSTALLATION_NOT_FOUND",
+          };
+        }
+      } else {
         try {
           const { data: installations } =
             await appOctokit.apps.listInstallations();
@@ -90,6 +100,7 @@ class GithubOctokit {
             success: true,
             message: "INSTALLATION_FOUND_AND_UPDATED",
             repos: repos,
+            installationIdFromGithub: installationIdForCurrentUser,
           };
         } catch (error) {
           return {
@@ -99,32 +110,39 @@ class GithubOctokit {
         }
       }
     } else {
-      console.log(orgname, username);
+      // console.log(orgname, username);
+      if (installationId != "00000") {
+        try {
+          const tokenResponse = await appOctokit.request(
+            "POST /app/installations/{installation_id}/access_tokens",
+            { installation_id: Number(installationId) }
+          );
 
-      try {
-        const tokenResponse = await appOctokit.request(
-          "POST /app/installations/{installation_id}/access_tokens",
-          { installation_id: Number(installationId) }
-        );
+          const installationAccessToken = tokenResponse.data.token;
 
-        const installationAccessToken = tokenResponse.data.token;
+          const installationOctokit = new Octokit({
+            auth: installationAccessToken,
+          });
 
-        const installationOctokit = new Octokit({
-          auth: installationAccessToken,
-        });
+          const reposResponse =
+            await installationOctokit.apps.listReposAccessibleToInstallation();
 
-        const reposResponse =
-          await installationOctokit.apps.listReposAccessibleToInstallation();
+          const repos: GitHubRepo[] = reposResponse.data
+            .repositories as GitHubRepo[];
 
-        const repos: GitHubRepo[] = reposResponse.data
-          .repositories as GitHubRepo[];
-
-        return {
-          success: true,
-          message: "INSTALLATION_FOUND",
-          repos: repos,
-        };
-      } catch (error) {
+          return {
+            success: true,
+            message: "INSTALLATION_FOUND",
+            repos: repos,
+            installationIdFromGithub: installationId,
+          };
+        } catch (error) {
+          return {
+            success: false,
+            message: "INSTALLATION_NOT_FOUND",
+          };
+        }
+      } else {
         try {
           const { data: installations } =
             await appOctokit.apps.listInstallations();
@@ -161,6 +179,7 @@ class GithubOctokit {
             success: true,
             message: "INSTALLATION_FOUND",
             repos: repos,
+            installationIdFromGithub: installationIdForCurrentOrg,
           };
         } catch (error) {
           return {

@@ -20,6 +20,8 @@ export async function DashboardSidebarServer() {
         userRole={user.role}
         subscription={subscription}
         defaultOrg={user?.defaultOrg}
+        isTrial={new Date(user?.trialEndAt).getTime() > Date.now() ? true : false}
+        trialEndAt={user?.trialEndAt}
       />
     </Suspense>
   );

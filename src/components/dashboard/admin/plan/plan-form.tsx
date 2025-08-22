@@ -85,7 +85,7 @@ export function PlanForm() {
     const validationResult = planFormSchema.safeParse(data);
 
     if (!validationResult.success) {
-      console.log(validationResult?.error?.message);
+      // console.log(validationResult?.error?.message);
       return;
     }
 

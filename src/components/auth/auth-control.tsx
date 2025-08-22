@@ -9,7 +9,7 @@ interface AuthControlProps {
   children: React.ReactNode;
 }
 export const ISignedIn = ({ session, user, children }: AuthControlProps) => {
-  console.log(session?.accessToken);
+  // console.log(session?.accessToken);
 
   if (session?.accessToken) {
     return <>{children}</>;
