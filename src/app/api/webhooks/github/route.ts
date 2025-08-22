@@ -12,269 +12,284 @@ const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_APP_WEBHOOK_SECRET as string;
 const TOKEN_CAP = 20000;
 
 export const POST = async (req: NextRequest) => {
-  const currTime = Date.now();
-  const signature = req.headers.get("x-hub-signature-256");
+  try {
+    const currTime = Date.now();
 
-  if (!signature) {
-    return NextResponse.json({ message: "Signature missing" }, { status: 401 });
-  }
+    const signature = req.headers.get("x-hub-signature-256");
 
-  // Read raw body as ArrayBuffer and convert to Buffer
-  const bodyArrayBuffer = await req.arrayBuffer();
-
-  let retryCnt = 0;
-  let isBodyParsed = false;
-
-  let installation_id: string = "";
-  let diff_url: string = "";
-  let repositoryName: string = "";
-  while (retryCnt < 10 && !isBodyParsed) {
-    retryCnt++;
-    const payloadParsedResponse = await githubOctokit.parseGithubWebhookRequest(
-      bodyArrayBuffer,
-      signature
-    );
-
-    if (!payloadParsedResponse.success) {
-      // return NextResponse.json(
-      //   { message: payloadParsedResponse.message },
-      //   { status: payloadParsedResponse.status }
-      // );
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      continue;
+    if (!signature) {
+      return NextResponse.json(
+        { message: "Signature missing" },
+        { status: 401 }
+      );
     }
-    isBodyParsed = true;
 
-    const payloadParsedResult = payloadParsedResponse.data;
-    // console.log(payloadParsedResult);
-    if (payloadParsedResult.action !== "opened") {
-      return NextResponse.json({
-        message: "Webhook processed successfully but was not a pull_req_open",
-      });
-    }
-    installation_id = payloadParsedResult.installation.id;
-    diff_url = payloadParsedResult.pull_request.diff_url;
-    repositoryName = payloadParsedResult.repository.full_name;
-  }
+    // Read raw body as ArrayBuffer and convert to Buffer
+    const bodyArrayBuffer = await req.arrayBuffer();
 
-  if (!installation_id) {
-    return NextResponse.json(
-      { message: "INVALID_SECRET_KEY" },
-      { status: 401 }
-    );
-  }
+    let retryCnt = 0;
+    let isBodyParsed = false;
 
-  // const isPrReviewEnabled = await db.connectedRepo.findUnique({
-  //   where: {
-  //     repoFullName: repositoryName,
-  //     isConnected: true,
-  //   },
-  // });
+    let installation_id: string = "";
+    let diff_url: string = "";
+    let repositoryName: string = "";
+    while (retryCnt < 10 && !isBodyParsed) {
+      retryCnt++;
+      const payloadParsedResponse =
+        await githubOctokit.parseGithubWebhookRequest(
+          bodyArrayBuffer,
+          signature
+        );
 
-  // if (!isPrReviewEnabled) {
-  //   return NextResponse.json({ message: "Webhook processed successfully" });
-  // }
-
-  let prDiffResponse:
-    | {
-        success: boolean;
-        message: string;
-        data: null;
-        owner: null;
-        repo: null;
-        pull_number: null;
+      if (!payloadParsedResponse.success) {
+        // return NextResponse.json(
+        //   { message: payloadParsedResponse.message },
+        //   { status: payloadParsedResponse.status }
+        // );
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        continue;
       }
-    | {
-        success: boolean;
-        data: object;
-        message: string;
-        owner: string;
-        repo: string;
-        pull_number: string;
-      } = {
-    success: false,
-    message: "",
-    data: null,
-    owner: null,
-    repo: null,
-    pull_number: null,
-  };
+      isBodyParsed = true;
 
-  retryCnt = 0;
-  let gotPrDiffResponse = false;
-  while (retryCnt < 10 && !gotPrDiffResponse) {
-    retryCnt++;
-    prDiffResponse = await githubOctokit.differenceData(
-      installation_id,
-      diff_url
-    );
-
-    if (!prDiffResponse.success) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const payloadParsedResult = payloadParsedResponse.data;
+      // console.log(payloadParsedResult);
+      if (payloadParsedResult.action !== "opened") {
+        return NextResponse.json({
+          message: "Webhook processed successfully but was not a pull_req_open",
+        });
+      }
+      installation_id = payloadParsedResult.installation.id;
+      diff_url = payloadParsedResult.pull_request.diff_url;
+      repositoryName = payloadParsedResult.repository.full_name;
     }
 
-    gotPrDiffResponse = true;
+    if (!installation_id) {
+      return NextResponse.json(
+        { message: "INVALID_SECRET_KEY" },
+        { status: 401 }
+      );
+    }
 
-    break;
-  }
+    console.log(installation_id);
 
-  const { owner, repo, pull_number } = prDiffResponse;
+    // const isPrReviewEnabled = await db.connectedRepo.findUnique({
+    //   where: {
+    //     repoFullName: repositoryName,
+    //     isConnected: true,
+    //   },
+    // });
 
-  const octokit = new Octokit({
-    authStrategy: createAppAuth,
-    auth: {
-      appId: process.env.GITHUB_APP_ID!,
-      privateKey: process.env.GITHUB_APP_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-      installationId: installation_id, // Use the parameter, not env var
-    },
-  });
+    // if (!isPrReviewEnabled) {
+    //   return NextResponse.json({ message: "Webhook processed successfully" });
+    // }
 
-  const { data: prData } = await octokit.pulls.get({
-    owner: owner!,
-    repo: repo!,
-    pull_number: +pull_number!,
-  });
+    let prDiffResponse:
+      | {
+          success: boolean;
+          message: string;
+          data: null;
+          owner: null;
+          repo: null;
+          pull_number: null;
+        }
+      | {
+          success: boolean;
+          data: object;
+          message: string;
+          owner: string;
+          repo: string;
+          pull_number: string;
+        } = {
+      success: false,
+      message: "",
+      data: null,
+      owner: null,
+      repo: null,
+      pull_number: null,
+    };
 
-  const author = prData.user?.login;
+    retryCnt = 0;
+    let gotPrDiffResponse = false;
+    while (retryCnt < 10 && !gotPrDiffResponse) {
+      retryCnt++;
+      prDiffResponse = await githubOctokit.differenceData(
+        installation_id,
+        diff_url
+      );
 
-  // console.log(author);
-  // let isLargePr = false;
-  if (!prDiffResponse.data) {
-    return NextResponse.json(
-      { message: "INVALID_SECRET_KEY" },
-      { status: 401 }
-    );
-  }
+      if (!prDiffResponse.success) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
 
-  console.log("author :", author);
+      gotPrDiffResponse = true;
 
-  const isAllowed = await db.userAsMemberAndOrg.findUnique({
-    where: {
-      isAllowed: true,
-      orgname_teamMemberUsername: {
+      break;
+    }
+
+    const { owner, repo, pull_number } = prDiffResponse;
+
+    const octokit = new Octokit({
+      authStrategy: createAppAuth,
+      auth: {
+        appId: process.env.GITHUB_APP_ID!,
+        privateKey: process.env.GITHUB_APP_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+        installationId: installation_id, // Use the parameter, not env var
+      },
+    });
+
+    const { data: prData } = await octokit.pulls.get({
+      owner: owner!,
+      repo: repo!,
+      pull_number: +pull_number!,
+    });
+
+    const author = prData.user?.login;
+
+    // console.log(author);
+    // let isLargePr = false;
+    if (!prDiffResponse.data) {
+      return NextResponse.json(
+        { message: "INVALID_SECRET_KEY" },
+        { status: 401 }
+      );
+    }
+
+    console.log("author :", author);
+
+    const isAllowed = await db.userAsMemberAndOrg.findUnique({
+      where: {
+        isAllowed: true,
+        orgname_teamMemberUsername: {
+          orgname: owner!,
+          teamMemberUsername: author,
+        },
+      },
+    });
+
+    console.log("isAllowed :", isAllowed);
+    if (!isAllowed) {
+      return NextResponse.json({ message: "Author wasn't allowed" });
+    }
+
+    const currDate = new Date();
+    const subscription = await db.subscription.findFirst({
+      where: {
         orgname: owner!,
-        teamMemberUsername: author,
+        AND: [
+          {
+            cycleStart: {
+              lte: currDate,
+            },
+          },
+          {
+            cycleEnd: {
+              gte: currDate,
+            },
+          },
+        ],
+        status: "active",
       },
-    },
-  });
+      include: {
+        plan: true,
+      },
+    });
 
-  console.log("isAllowed :", isAllowed);
-  if (!isAllowed) {
-    return NextResponse.json({ message: "Author wasn't allowed" });
-  }
+    console.log("subscription :", subscription);
 
-  const currDate = new Date();
-  const subscription = await db.subscription.findFirst({
-    where: {
-      orgname: owner!,
-      AND: [
-        {
-          cycleStart: {
-            lte: currDate,
-          },
-        },
-        {
-          cycleEnd: {
-            gte: currDate,
-          },
-        },
-      ],
-      status: "active",
-    },
-    include: {
-      plan: true,
-    },
-  });
+    const orgDataFromDb = await db.orgRepo.findUnique({
+      where: {
+        orgname: owner!,
+        repoFullName: `${owner!}/${repo!}`,
+      },
+    });
 
-  console.log("subscription :", subscription);
-
-  const orgDataFromDb = await db.orgRepo.findUnique({
-    where: {
-      orgname: owner!,
-      repoFullName: `${owner!}/${repo!}`,
-    },
-  });
-
-  if (!orgDataFromDb) {
-    return NextResponse.json({ message: "No org data found" });
-  }
-
-  await db.pullRequest.create({
-    data: {
-      ownerUsername: orgDataFromDb?.ownerUsername!,
-      repoFullName: `${owner!}/${repo!}`,
-      orgname: owner!,
-      author: author,
-      pullNumber: +pull_number!,
-      timeTakenToReview: 0,
-    },
-  });
-
-  const user = await db.user.findUnique({
-    where: {
-      username: orgDataFromDb?.ownerUsername,
-    },
-  });
-
-  let onTrial = false;
-  if (!user) {
-    return NextResponse.json({ message: "No user found" });
-  }
-
-  onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
-
-  if (!subscription || (subscription && subscription?.status !== "active")) {
-    if (onTrial) {
-      await inngest.send({
-        name: "app/review-generator",
-        data: {
-          payload: {
-            installation_id: installation_id,
-            owner,
-            repo,
-            pull_number,
-            author: prData.user?.login,
-            isFreeUser: false,
-            ownerUsername: orgDataFromDb?.ownerUsername!,
-            currTime: Date.now(),
-          },
-        },
-      });
-    } else {
-      await inngest.send({
-        name: "app/review-generator",
-        data: {
-          payload: {
-            installation_id: installation_id,
-            owner,
-            repo,
-            pull_number,
-            author: prData.user?.login,
-            isFreeUser: true,
-            ownerUsername: orgDataFromDb?.ownerUsername!,
-            currTime: Date.now(),
-          },
-        },
-      });
+    if (!orgDataFromDb) {
+      return NextResponse.json({ message: "No org data found" });
     }
-    return NextResponse.json({ message: "Webhook processed successfully" });
-  }
 
-  await inngest.send({
-    name: "app/review-generator",
-    data: {
-      payload: {
-        installation_id: installation_id,
-        owner,
-        repo,
-        pull_number,
-        author: prData.user?.login,
-        isFreeUser: false,
+    await db.pullRequest.create({
+      data: {
         ownerUsername: orgDataFromDb?.ownerUsername!,
-        currTime: Date.now(),
+        repoFullName: `${owner!}/${repo!}`,
+        orgname: owner!,
+        author: author,
+        pullNumber: +pull_number!,
+        timeTakenToReview: 0,
       },
-    },
-  });
+    });
 
-  return NextResponse.json({ message: "Webhook processed successfully" });
+    const user = await db.user.findUnique({
+      where: {
+        username: orgDataFromDb?.ownerUsername,
+      },
+    });
+
+    let onTrial = false;
+    if (!user) {
+      return NextResponse.json({ message: "No user found" });
+    }
+
+    onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
+
+    if (!subscription || (subscription && subscription?.status !== "active")) {
+      if (onTrial) {
+        await inngest.send({
+          name: "app/review-generator",
+          data: {
+            payload: {
+              installation_id: installation_id,
+              owner,
+              repo,
+              pull_number,
+              author: prData.user?.login,
+              isFreeUser: false,
+              ownerUsername: orgDataFromDb?.ownerUsername!,
+              currTime: Date.now(),
+            },
+          },
+        });
+      } else {
+        await inngest.send({
+          name: "app/review-generator",
+          data: {
+            payload: {
+              installation_id: installation_id,
+              owner,
+              repo,
+              pull_number,
+              author: prData.user?.login,
+              isFreeUser: true,
+              ownerUsername: orgDataFromDb?.ownerUsername!,
+              currTime: Date.now(),
+            },
+          },
+        });
+      }
+      return NextResponse.json({ message: "Webhook processed successfully" });
+    }
+
+    await inngest.send({
+      name: "app/review-generator",
+      data: {
+        payload: {
+          installation_id: installation_id,
+          owner,
+          repo,
+          pull_number,
+          author: prData.user?.login,
+          isFreeUser: false,
+          ownerUsername: orgDataFromDb?.ownerUsername!,
+          currTime: Date.now(),
+        },
+      },
+    });
+
+    return NextResponse.json({ message: "Webhook processed successfully" });
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json({
+      message: "Webhook processed successfully",
+      error,
+    });
+  }
 };
