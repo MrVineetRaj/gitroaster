@@ -28,7 +28,7 @@ class GithubOctokit {
     const appOctokit = this.appOctokit;
 
     if (username === orgname) {
-      let installationFound = false;
+      // let installationFound = false;
       if (installationId != "00000") {
         try {
           const tokenResponse = await appOctokit.request(
