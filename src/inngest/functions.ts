@@ -154,7 +154,7 @@ export const reviewGenerator = inngest.createFunction(
       if (tokenCount < 20000) {
         await step.run("Summary for free user", async () => {
           try {
-            const res = await openAiClient.chatgptModel(
+            const res = await openAiClient.chatgptModelFree(
               SYSTEM_PROMPT.summary.header,
               fileContent
             );
@@ -180,7 +180,7 @@ export const reviewGenerator = inngest.createFunction(
           "Summary for free user for large pull request",
           async () => {
             try {
-              const res = await openAiClient.chatgptModel(
+              const res = await openAiClient.chatgptModelFree(
                 SYSTEM_PROMPT.largePullRequests,
                 JSON.stringify(filenames)
               );
@@ -228,7 +228,7 @@ export const reviewGenerator = inngest.createFunction(
 
     await step.run("AI review for paid users ", async () => {
       if (tokenCount < 50000) {
-        const res = await openAiClient.chatgptModel(
+        const res = await openAiClient.chatgptModelPaid(
           SYSTEM_PROMPT.header,
           fileContent
         );
@@ -260,7 +260,7 @@ export const reviewGenerator = inngest.createFunction(
           }
 
           try {
-            const summaryResponse = await openAiClient.chatgptModel(
+            const summaryResponse = await openAiClient.chatgptModelFree(
               SYSTEM_PROMPT.summary.header,
               aiResp.overall_review
             );
@@ -284,7 +284,7 @@ export const reviewGenerator = inngest.createFunction(
           "Summary for paid users for large pull request",
           async () => {
             try {
-              const res = await openAiClient.chatgptModel(
+              const res = await openAiClient.chatgptModelFree(
                 SYSTEM_PROMPT.largePullRequests,
                 JSON.stringify(filenames)
               );
