@@ -20,9 +20,20 @@ export class OpenAIClient {
     return token_count;
   }
 
-  async chatgptModel(system: string, userInput: string) {
+  async chatgptModelPaid(system: string, userInput: string) {
     const response = await this.client.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-5",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: userInput },
+      ],
+      response_format: { type: "json_object" },
+    });
+    return response.choices[0].message.content;
+  }
+  async chatgptModelFree(system: string, userInput: string) {
+    const response = await this.client.chat.completions.create({
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: system },
         { role: "user", content: userInput },
