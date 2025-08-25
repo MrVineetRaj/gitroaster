@@ -144,6 +144,7 @@ export const POST = async (req: NextRequest) => {
     });
 
     const author = prData.user?.login;
+    const title = prData.title;
 
     // console.log(author);
     // let isLargePr = false;
@@ -215,6 +216,7 @@ export const POST = async (req: NextRequest) => {
         author: author,
         pullNumber: +pull_number!,
         timeTakenToReview: 0,
+        title,
       },
     });
 

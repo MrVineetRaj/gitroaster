@@ -104,6 +104,7 @@ model OrgRepo {
 
 model PullRequest {
   id String @id @default(uuid())
+  title String? @default("PR title")
   ownerUsername String 
   repoFullName String 
   orgname String 
