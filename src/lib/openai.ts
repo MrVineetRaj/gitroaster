@@ -22,7 +22,7 @@ export class OpenAIClient {
 
   async chatgptModelPaid(system: string, userInput: string) {
     const response = await this.client.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4.1",
       messages: [
         { role: "system", content: system },
         { role: "user", content: userInput },

@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { githubOctokit } from "@/modules/github/utils";
 import { caller } from "@/trpc/server";
 import {
@@ -119,10 +120,17 @@ export const DashboardPage = async () => {
                           className=" flex items-center"
                           target="_blank"
                         >
-                          <Badge className="rounded-none">{`#${item?.pullNumber}`}</Badge>
+                          <Badge className="rounded-none bg-blue-500 text-white">{`#${item?.pullNumber}`}</Badge>
                         </Link>
                       </h3>
-                      <Badge>{item?.status}</Badge>
+                      <Badge
+                        className={cn(
+                          " rounded-none",
+                          item.status === "SUCCESS" ? "bg-green-500" : ""
+                        )}
+                      >
+                        {item?.status}
+                      </Badge>
                     </span>
                     <span className="flex text-sm items-center gap-2">
                       <p>By {item?.author}</p>
