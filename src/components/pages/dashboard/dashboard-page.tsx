@@ -1,4 +1,5 @@
 import RepoContainer from "@/components/dashboard/repositories/repo-container";
+import { GitroasterUsage } from "@/components/dashboard/usage-chart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { githubOctokit } from "@/modules/github/utils";
 import { caller } from "@/trpc/server";
 import {
@@ -27,6 +29,11 @@ export const DashboardPage = async () => {
     const pullRequestData = await caller.githubRouter.getPRData({
       page: 1,
       limit: 20,
+    });
+    const chartData = await caller.dashboardRouter.getUageData({
+      days: 7,
+      orgname: user?.defaultOrg || "",
+      endDateInMS: Date.now(),
     });
 
     // console.log("installationId");
@@ -105,8 +112,10 @@ export const DashboardPage = async () => {
           </div>
           {/* data card */}
           {/* Usage | Pull requests */}
-          <div className="flex">
-            <div className="flex-1"></div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <GitroasterUsage chartData={chartData} />
+            </div>
             <div className="flex-1 flex flex-col gap-2">
               {pullRequestData?.length > 0 ? (
                 pullRequestData.slice(0, 5)?.map((item) => (
@@ -119,10 +128,17 @@ export const DashboardPage = async () => {
                           className=" flex items-center"
                           target="_blank"
                         >
-                          <Badge className="rounded-none">{`#${item?.pullNumber}`}</Badge>
+                          <Badge className="rounded-none bg-blue-500 text-white">{`#${item?.pullNumber}`}</Badge>
                         </Link>
                       </h3>
-                      <Badge>{item?.status}</Badge>
+                      <Badge
+                        className={cn(
+                          " rounded-none",
+                          item.status === "SUCCESS" ? "bg-green-500" : ""
+                        )}
+                      >
+                        {item?.status}
+                      </Badge>
                     </span>
                     <span className="flex text-sm items-center gap-2">
                       <p>By {item?.author}</p>
@@ -156,7 +172,7 @@ export const DashboardPage = async () => {
     );
   } catch (error) {
     // window.location.reload();
-    return null;
+    return <div>Error loading dashboard. Please try again later.</div>;
   }
 };
 
@@ -180,6 +196,7 @@ export const DashboardPageLoader = () => {
             comments only.
           </p>
         </div>
+        pull_request
       </div>
     </div>
   );
