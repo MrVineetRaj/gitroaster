@@ -5,6 +5,7 @@ import o200k_base from "js-tiktoken/ranks/o200k_base";
 
 const encoding = new Tiktoken(o200k_base);
 
+
 export class OpenAIClient {
   client: OpenAI;
 

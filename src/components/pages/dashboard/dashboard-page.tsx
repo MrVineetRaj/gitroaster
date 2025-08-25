@@ -1,4 +1,5 @@
 import RepoContainer from "@/components/dashboard/repositories/repo-container";
+import { GitroasterUsage } from "@/components/dashboard/usage-chart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,11 @@ export const DashboardPage = async () => {
     const pullRequestData = await caller.githubRouter.getPRData({
       page: 1,
       limit: 20,
+    });
+    const chartData = await caller.dashboardRouter.getUageData({
+      days: 7,
+      orgname: user?.defaultOrg || "",
+      endDateInMS: Date.now(),
     });
 
     // console.log("installationId");
@@ -106,8 +112,10 @@ export const DashboardPage = async () => {
           </div>
           {/* data card */}
           {/* Usage | Pull requests */}
-          <div className="flex">
-            <div className="flex-1"></div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <GitroasterUsage chartData={chartData} />
+            </div>
             <div className="flex-1 flex flex-col gap-2">
               {pullRequestData?.length > 0 ? (
                 pullRequestData.slice(0, 5)?.map((item) => (
@@ -164,7 +172,7 @@ export const DashboardPage = async () => {
     );
   } catch (error) {
     // window.location.reload();
-    return null;
+    return <div>Error loading dashboard. Please try again later.</div>;
   }
 };
 
@@ -188,6 +196,7 @@ export const DashboardPageLoader = () => {
             comments only.
           </p>
         </div>
+        pull_request
       </div>
     </div>
   );
