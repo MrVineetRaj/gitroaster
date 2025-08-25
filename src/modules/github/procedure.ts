@@ -74,4 +74,25 @@ export const githubRouter = createTRPCRouter({
         });
       }
     }),
+  getPRData: protectedProcedure
+    .input(
+      z.object({
+        page: z.number(),
+        limit: z.number(),
+      })
+    )
+    .mutation(async ({ input: { limit, page }, ctx }) => {
+      const pullRequests = await db.pullRequest.findMany({
+        where: {
+          ownerUsername: ctx?.auth?.githubUsername,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      return pullRequests;
+    }),
 });

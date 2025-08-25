@@ -210,6 +210,9 @@ export const reviewGenerator = inngest.createFunction(
         },
         update: {
           timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+          charCount: fileContent.length,
+          tokenCount: tokenCount,
+          status: PullRequestStatus.SUCCESS,
         },
         create: {
           ownerUsername,
@@ -314,6 +317,9 @@ export const reviewGenerator = inngest.createFunction(
         },
         update: {
           timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+          charCount: fileContent.length,
+          tokenCount: tokenCount,
+          status: PullRequestStatus.SUCCESS,
         },
         create: {
           ownerUsername,
