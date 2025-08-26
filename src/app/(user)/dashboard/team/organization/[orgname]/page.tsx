@@ -18,7 +18,7 @@ const Page = async ({
   }>;
 }) => {
   const { orgname } = await params;
-  console.log("orgname", orgname);
+  // console.log("orgname", orgname);
   return (
     <div className="w-full bg-background h-screen ">
       <Suspense fallback={<OrganizationPageForTeamMemberLoader />}>
