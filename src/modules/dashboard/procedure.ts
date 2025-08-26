@@ -140,7 +140,6 @@ export const dashboardRouter = createTRPCRouter({
         },
       });
       const currTime = new Date();
-      let cycleStart: number;
       const subscription = await db.subscription.findUnique({
         where: {
           orgname_username: {
@@ -170,7 +169,7 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       currTime.setDate(1);
-      cycleStart =
+      const cycleStart =
         subscription?.cycleStart?.getMilliseconds() ||
         user?.trialEndAt?.getMilliseconds() ||
         currTime.getMilliseconds();
@@ -208,18 +207,23 @@ export const dashboardRouter = createTRPCRouter({
         },
       });
 
+      // avgTimeTaken: pullRequestData._count.id > 0 ? +(pullRequestData._sum.timeTakenToReview || 0) / pullRequestData._count.id : 0,
       return {
         pullRequestData: {
           avgTimeTaken:
-            +(pullRequestData._sum.timeTakenToReview || 0) /
-            pullRequestData._count.id,
+            pullRequestData._count.id > 0
+              ? +(pullRequestData._sum.timeTakenToReview || 0) /
+                pullRequestData._count.id
+              : 0,
           tokenCount: pullRequestData._sum.tokenCount,
           _count: pullRequestData._count, // Add this
         },
         pullRequestDataMonthly: {
           avgTimeTaken:
-            +(pullRequestDataWeekly._sum.timeTakenToReview || 0) /
-            pullRequestDataWeekly._count.id,
+            pullRequestDataWeekly._count.id > 0
+              ? +(pullRequestDataWeekly._sum.timeTakenToReview || 0) /
+                pullRequestDataWeekly._count.id
+              : 0,
           tokenCount: pullRequestDataWeekly._sum.tokenCount,
           _count: pullRequestDataWeekly._count, // Add this
         },

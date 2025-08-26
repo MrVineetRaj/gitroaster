@@ -90,43 +90,12 @@ export const DashboardPage = async () => {
       },
     ];
 
-    /*
-     <Card className="relative overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Reviews Completed
-              </CardTitle>
-              <GitPullRequestIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalReviews}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.reviewsThisWeek > 0
-                  ? `+${stats.reviewsThisWeek} this week`
-                  : "No reviews this week"}
-              </p>
-              <div className="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600" />
-            </CardContent>
-          </Card>
-    */
-
-    console.log("quickCardData", quickCardData);
-
     const { repos, installationIdFromGithub } =
       await githubOctokit.getEnabledRepoForGitRoaster(
         user?.username,
         user?.defaultOrg,
         installationId || "00000"
       );
-
-    // if (installationId !== installationIdFromGithub) {
-    //   console.log(
-    //     "installationId updated, reloading...",
-    //     installationId,"__",
-    //     installationIdFromGithub
-    //   );
-    //   // window.location.reload();
-    // }
 
     const repoCount = repos?.length ?? 0;
 
