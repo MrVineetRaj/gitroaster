@@ -3,6 +3,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { db } from "@/lib/prisma";
 // import { ReviewStatus } from "@/generated/prisma";
 import { TRPCError } from "@trpc/server";
+import { SubscriptionStatus } from "@/generated/prisma";
 // import { razorpayInstance } from "../razorpay/utils";
 
 export const dashboardRouter = createTRPCRouter({
@@ -11,12 +12,14 @@ export const dashboardRouter = createTRPCRouter({
       z.object({
         page: z.number(),
         limit: z.number(),
+        orgname: z.string(),
       })
     )
-    .mutation(async ({ input: { limit, page }, ctx }) => {
+    .mutation(async ({ input: { limit, page, orgname }, ctx }) => {
       const pullRequests = await db.pullRequest.findMany({
         where: {
           ownerUsername: ctx?.auth?.githubUsername,
+          orgname,
         },
         orderBy: {
           createdAt: "desc",
@@ -27,7 +30,7 @@ export const dashboardRouter = createTRPCRouter({
 
       return pullRequests;
     }),
-  getUageData: protectedProcedure
+  getUsageData: protectedProcedure
     .input(
       z.object({
         days: z.number(),
@@ -41,6 +44,7 @@ export const dashboardRouter = createTRPCRouter({
         const startDate = new Date(startDateInMS);
         const endDate = new Date(endDateInMS);
         startDate.setHours(0, 0, 0, 0);
+
         const results = await db.pullRequest
           .groupBy({
             by: ["createdAt"],
@@ -112,8 +116,112 @@ export const dashboardRouter = createTRPCRouter({
       }
     }),
 
-  // todo : yet to be completed
-  getQuickCard: protectedProcedure.query(async () => {
-    const pullRequests = await db.pullRequest.findMany();
-  }),
+  getQuickCard: protectedProcedure
+    .input(
+      z.object({
+        orgname: z.string(),
+      })
+    )
+    .query(async ({ input: { orgname }, ctx }) => {
+      console.log(orgname);
+      const pullRequestData = await db.pullRequest.aggregate({
+        where: {
+          ownerUsername: ctx?.auth?.githubUsername,
+          orgname,
+        },
+        _sum: {
+          timeTakenToReview: true,
+          tokenCount: true, // Add this
+        },
+        _count: {
+          id: true,
+        },
+      });
+      const currTime = new Date();
+      let cycleStart: number;
+      const subscription = await db.subscription.findUnique({
+        where: {
+          orgname_username: {
+            orgname,
+            username: ctx?.auth.githubUsername!,
+          },
+          status: SubscriptionStatus.active,
+          cycleStart: {
+            lte: currTime,
+          },
+          cycleEnd: {
+            gte: currTime,
+          },
+        },
+      });
+
+      const user = await db.user.findUnique({
+        where: {
+          username: ctx?.auth.githubUsername!,
+          trialStartAt: {
+            lte: currTime,
+          },
+          trialEndAt: {
+            gte: currTime,
+          },
+        },
+      });
+
+      currTime.setDate(1);
+      cycleStart =
+        subscription?.cycleStart?.getMilliseconds() ||
+        user?.trialEndAt?.getMilliseconds() ||
+        currTime.getMilliseconds();
+
+      const cycleStartAt = new Date(cycleStart);
+      const pullRequestDataWeekly = await db.pullRequest.aggregate({
+        where: {
+          ownerUsername: ctx?.auth?.githubUsername,
+          orgname,
+          createdAt: {
+            gte: cycleStartAt,
+          },
+        },
+        _sum: {
+          timeTakenToReview: true,
+          tokenCount: true, // Add this
+        },
+        _count: {
+          id: true,
+        },
+      });
+
+      // Calculate total tokens
+      // const totalTokens = pullRequests.reduce(
+      //   (sum, pr) => sum + (pr.tokenCount || 0),
+      //   0
+      // );
+
+      const repoConnected = await db.orgRepo.count({
+        where: {
+          ownerUsername: ctx?.auth?.githubUsername, // filter by user
+          orgname: orgname, // filter by org
+          isConnected: true,
+        },
+      });
+
+      return {
+        pullRequestData: {
+          avgTimeTaken:
+            +(pullRequestData._sum.timeTakenToReview || 0) /
+            pullRequestData._count.id,
+          tokenCount: pullRequestData._sum.tokenCount,
+          _count: pullRequestData._count, // Add this
+        },
+        pullRequestDataMonthly: {
+          avgTimeTaken:
+            +(pullRequestDataWeekly._sum.timeTakenToReview || 0) /
+            pullRequestDataWeekly._count.id,
+          tokenCount: pullRequestDataWeekly._sum.tokenCount,
+          _count: pullRequestDataWeekly._count, // Add this
+        },
+        repoConnected,
+      };
+      // ...existing code...
+    }),
 });

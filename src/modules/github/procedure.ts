@@ -30,10 +30,13 @@ export const githubRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { orgname, repoFullName } }) => {
       try {
-        await db.orgRepo.delete({
+        await db.orgRepo.update({
           where: {
             orgname,
             repoFullName,
+          },
+          data: {
+            isConnected: false,
           },
         });
       } catch (error) {
@@ -73,26 +76,5 @@ export const githubRouter = createTRPCRouter({
           message: "Failed to connect repo try again later",
         });
       }
-    }),
-  getPRData: protectedProcedure
-    .input(
-      z.object({
-        page: z.number(),
-        limit: z.number(),
-      })
-    )
-    .mutation(async ({ input: { limit, page }, ctx }) => {
-      const pullRequests = await db.pullRequest.findMany({
-        where: {
-          ownerUsername: ctx?.auth?.githubUsername,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
-
-      return pullRequests;
     }),
 });

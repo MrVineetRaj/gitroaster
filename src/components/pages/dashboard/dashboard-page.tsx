@@ -10,15 +10,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, formatCompactTime } from "@/lib/utils";
 import { githubOctokit } from "@/modules/github/utils";
 import { caller } from "@/trpc/server";
 import {
   AlertCircleIcon,
+  ClockIcon,
   ExternalLinkIcon,
   GitBranchIcon,
+  GitPullRequestIcon,
+  LucideProps,
   PlusIcon,
   ShieldCheckIcon,
+  ZapIcon,
 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -26,17 +30,87 @@ import React from "react";
 export const DashboardPage = async () => {
   try {
     const { user, installationId } = await caller.userRouter.syncUser();
-    const pullRequestData = await caller.githubRouter.getPRData({
+    const pullRequestData = await caller.dashboardRouter.getPRData({
       page: 1,
       limit: 20,
+      orgname: user?.defaultOrg || "",
     });
-    const chartData = await caller.dashboardRouter.getUageData({
+    const chartData = await caller.dashboardRouter.getUsageData({
       days: 7,
       orgname: user?.defaultOrg || "",
       endDateInMS: Date.now(),
     });
 
-    // console.log("installationId");
+    const quickCardData = await caller.dashboardRouter.getQuickCard({
+      orgname: user?.defaultOrg || "",
+    });
+
+    const QUICK_CARD_CONTENT: {
+      title: string;
+      link?: string;
+      icon: React.ForwardRefExoticComponent<
+        Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+      >;
+      stat: number | string;
+      statDesc?: number | string;
+    }[] = [
+      {
+        title: "Reviews Completed",
+        icon: GitPullRequestIcon,
+        stat: quickCardData.pullRequestData._count?.id || 0,
+        statDesc: `+${
+          quickCardData.pullRequestDataMonthly._count?.id || 0
+        } this week`,
+      },
+      {
+        title: "Avg Review Time",
+        icon: ClockIcon,
+        stat: quickCardData.pullRequestData.avgTimeTaken
+          ? formatCompactTime(
+              +(quickCardData.pullRequestData.avgTimeTaken / 1000).toFixed(0)
+            )
+          : "NA",
+        statDesc:
+          quickCardData.pullRequestData._count?.id > 0
+            ? "⚡ Lightning fast AI"
+            : "⏳ Waiting for first review",
+      },
+      {
+        title: "Tokens Used",
+        icon: ZapIcon, // or use a different icon like ZapIcon
+        stat:
+          (quickCardData?.pullRequestDataMonthly?.tokenCount || 0) + " tokens",
+        statDesc: "out of 2,000,000 tokens",
+      },
+      {
+        title: "Connected Repos",
+        icon: GitBranchIcon,
+        stat: quickCardData.repoConnected || 0,
+        statDesc: "Active repositories",
+      },
+    ];
+
+    /*
+     <Card className="relative overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Reviews Completed
+              </CardTitle>
+              <GitPullRequestIcon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalReviews}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.reviewsThisWeek > 0
+                  ? `+${stats.reviewsThisWeek} this week`
+                  : "No reviews this week"}
+              </p>
+              <div className="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600" />
+            </CardContent>
+          </Card>
+    */
+
+    console.log("quickCardData", quickCardData);
 
     const { repos, installationIdFromGithub } =
       await githubOctokit.getEnabledRepoForGitRoaster(
@@ -111,6 +185,29 @@ export const DashboardPage = async () => {
             </p>
           </div>
           {/* data card */}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+            {QUICK_CARD_CONTENT?.map((data, idx) => (
+              <Card
+                className="relative overflow-hidden rounded-none hover:bg-primary/20 transition-all hover:scale-[1.02] hover:z-30 duration-200"
+                key={idx}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 ">
+                  <CardTitle className="text-sm font-medium">
+                    {data.title}
+                  </CardTitle>
+                  <data.icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{data.stat}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {data?.statDesc}
+                  </p>
+                  <div className="absolute z-10 top-0 right-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           {/* Usage | Pull requests */}
           <div className="flex gap-2">
             <div className="flex-1">
@@ -163,7 +260,34 @@ export const DashboardPage = async () => {
                   </div>
                 ))
               ) : (
-                <></>
+                <div className="h-full bg-card w-full border flex flex-col items-center justify-center gap-4">
+                  <h1 className="text-xl font-bold italic">
+                    No Pull requests are reviewed
+                  </h1>
+                  <p className="text-sm text-muted-foreground italic">
+                    Get started by creating a pull request in one of your
+                    connected repositories.
+                  </p>
+                  <Button asChild variant="outline">
+                    <Link
+                      href={
+                        repoCount > 0
+                          ? `/dashboard/repositories`
+                          : appInstallationURL
+                      }
+                      target={repoCount > 0 ? "_self" : "_blank"}
+                      className="flex gap-2 items-center"
+                    >
+                      {repoCount
+                        ? "View Connected Repositories"
+                        : "Connect Repositories"}
+                      <ExternalLinkIcon className="w-3 h-3" />
+                    </Link>
+                  </Button>
+                </div>
+              )}
+              {pullRequestData?.length > 5 && (
+                <Button variant="outline">View More</Button>
               )}
             </div>
           </div>
