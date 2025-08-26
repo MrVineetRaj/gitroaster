@@ -141,4 +141,13 @@ export const teamRouter = createTRPCRouter({
         });
       }
     }),
+  getTeamMemberOrgs: protectedProcedure.query(async ({ ctx }) => {
+    const org = await db.userAsMemberAndOrg.findMany({
+      where: {
+        teamMemberUsername: ctx?.auth.githubUsername,
+      },
+    });
+
+    return org || [];
+  }),
 });

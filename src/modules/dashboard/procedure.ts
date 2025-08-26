@@ -3,7 +3,11 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { db } from "@/lib/prisma";
 // import { ReviewStatus } from "@/generated/prisma";
 import { TRPCError } from "@trpc/server";
-import { PullRequestStatus, SubscriptionStatus } from "@/generated/prisma";
+import {
+  $Enums,
+  PullRequestStatus,
+  SubscriptionStatus,
+} from "@/generated/prisma";
 // import { razorpayInstance } from "../razorpay/utils";
 
 export const dashboardRouter = createTRPCRouter({
@@ -18,7 +22,7 @@ export const dashboardRouter = createTRPCRouter({
     .mutation(async ({ input: { limit, page, orgname }, ctx }) => {
       const pullRequests = await db.pullRequest.findMany({
         where: {
-          ownerUsername: ctx?.auth?.githubUsername,
+          // ownerUsername: ctx?.auth?.githubUsername,
           orgname,
         },
         orderBy: {
@@ -49,7 +53,7 @@ export const dashboardRouter = createTRPCRouter({
           .groupBy({
             by: ["createdAt"],
             where: {
-              ownerUsername: ctx?.auth?.githubUsername, // filter by user
+              // ownerUsername: ctx?.auth?.githubUsername, // filter by user
               orgname: orgname, // filter by org
               createdAt: {
                 gte: startDate, // start date
@@ -103,7 +107,6 @@ export const dashboardRouter = createTRPCRouter({
           });
         });
 
-        console.log(chartData);
         return chartData;
       } catch (error) {
         console.log(error);
@@ -124,111 +127,122 @@ export const dashboardRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { orgname }, ctx }) => {
-      console.log(orgname);
-      const pullRequestData = await db.pullRequest.aggregate({
-        where: {
-          ownerUsername: ctx?.auth?.githubUsername,
-          orgname,
-          status: PullRequestStatus.SUCCESS,
-        },
-        _sum: {
-          timeTakenToReview: true,
-          tokenCount: true, // Add this
-        },
-        _count: {
-          id: true,
-        },
-      });
-      const currTime = new Date();
-      const subscription = await db.subscription.findUnique({
-        where: {
-          orgname_username: {
+      try {
+
+
+        const pullRequestData = await db.pullRequest.aggregate({
+          where: {
+            // ownerUsername: ctx?.auth?.githubUsername,
             orgname,
-            username: ctx?.auth.githubUsername!,
+            status: PullRequestStatus.SUCCESS,
           },
-          status: SubscriptionStatus.active,
-          cycleStart: {
-            lte: currTime,
+          _sum: {
+            timeTakenToReview: true,
+            tokenCount: true, // Add this
           },
-          cycleEnd: {
-            gte: currTime,
+          _count: {
+            id: true,
           },
-        },
-      });
-
-      const user = await db.user.findUnique({
-        where: {
-          username: ctx?.auth.githubUsername!,
-          trialStartAt: {
-            lte: currTime,
+        });
+        const currTime = new Date();
+        const subscription = await db.subscription.findUnique({
+          where: {
+            orgname,
+            status: SubscriptionStatus.active,
+            cycleStart: {
+              lte: currTime,
+            },
+            cycleEnd: {
+              gte: currTime,
+            },
           },
-          trialEndAt: {
-            gte: currTime,
+        });
+
+        let cycleStart: number = -1;
+        if (subscription) {
+          const user = await db.user.findUnique({
+            where: {
+              username: subscription.username!,
+              trialStartAt: {
+                lte: currTime,
+              },
+              trialEndAt: {
+                gte: currTime,
+              },
+            },
+          });
+          cycleStart =
+            subscription?.cycleStart?.getMilliseconds() ||
+            user?.trialEndAt?.getMilliseconds() ||
+            -1;
+        }
+
+        currTime.setDate(1);
+        cycleStart =
+          cycleStart === -1 ? currTime.getMilliseconds() : cycleStart;
+
+        const cycleStartAt = new Date(cycleStart);
+        const pullRequestDataWeekly = await db.pullRequest.aggregate({
+          where: {
+            // ownerUsername: ctx?.auth?.githubUsername,
+            orgname,
+            createdAt: {
+              gte: cycleStartAt,
+            },
+            status: PullRequestStatus.SUCCESS,
           },
-        },
-      });
-
-      currTime.setDate(1);
-      const cycleStart =
-        subscription?.cycleStart?.getMilliseconds() ||
-        user?.trialEndAt?.getMilliseconds() ||
-        currTime.getMilliseconds();
-
-      const cycleStartAt = new Date(cycleStart);
-      const pullRequestDataWeekly = await db.pullRequest.aggregate({
-        where: {
-          ownerUsername: ctx?.auth?.githubUsername,
-          orgname,
-          createdAt: {
-            gte: cycleStartAt,
+          _sum: {
+            timeTakenToReview: true,
+            tokenCount: true, // Add this
           },
-          status: PullRequestStatus.SUCCESS,
-        },
-        _sum: {
-          timeTakenToReview: true,
-          tokenCount: true, // Add this
-        },
-        _count: {
-          id: true,
-        },
-      });
+          _count: {
+            id: true,
+          },
+        });
 
-      // Calculate total tokens
-      // const totalTokens = pullRequests.reduce(
-      //   (sum, pr) => sum + (pr.tokenCount || 0),
-      //   0
-      // );
+        // Calculate total tokens
+        // const totalTokens = pullRequests.reduce(
+        //   (sum, pr) => sum + (pr.tokenCount || 0),
+        //   0
+        // );
 
-      const repoConnected = await db.orgRepo.count({
-        where: {
-          ownerUsername: ctx?.auth?.githubUsername, // filter by user
-          orgname: orgname, // filter by org
-          isConnected: true,
-        },
-      });
+        const repoConnected = await db.orgRepo.count({
+          where: {
+            // ownerUsername: ctx?.auth?.githubUsername, // filter by user
+            orgname: orgname, // filter by org
+            isConnected: true,
+          },
+        });
 
-      // avgTimeTaken: pullRequestData._count.id > 0 ? +(pullRequestData._sum.timeTakenToReview || 0) / pullRequestData._count.id : 0,
-      return {
-        pullRequestData: {
-          avgTimeTaken:
-            pullRequestData._count.id > 0
-              ? +(pullRequestData._sum.timeTakenToReview || 0) /
-                pullRequestData._count.id
-              : 0,
-          tokenCount: pullRequestData._sum.tokenCount,
-          _count: pullRequestData._count, // Add this
-        },
-        pullRequestDataMonthly: {
-          avgTimeTaken:
-            pullRequestDataWeekly._count.id > 0
-              ? +(pullRequestDataWeekly._sum.timeTakenToReview || 0) /
-                pullRequestDataWeekly._count.id
-              : 0,
-          tokenCount: pullRequestDataWeekly._sum.tokenCount,
-          _count: pullRequestDataWeekly._count, // Add this
-        },
-        repoConnected,
-      };
+        // avgTimeTaken: pullRequestData._count.id > 0 ? +(pullRequestData._sum.timeTakenToReview || 0) / pullRequestData._count.id : 0,
+        return {
+          pullRequestData: {
+            avgTimeTaken:
+              pullRequestData._count.id > 0
+                ? +(pullRequestData._sum.timeTakenToReview || 0) /
+                  pullRequestData._count.id
+                : 0,
+            tokenCount: pullRequestData._sum.tokenCount,
+            _count: pullRequestData._count, // Add this
+          },
+          pullRequestDataMonthly: {
+            avgTimeTaken:
+              pullRequestDataWeekly._count.id > 0
+                ? +(pullRequestDataWeekly._sum.timeTakenToReview || 0) /
+                  pullRequestDataWeekly._count.id
+                : 0,
+            tokenCount: pullRequestDataWeekly._sum.tokenCount,
+            _count: pullRequestDataWeekly._count, // Add this
+          },
+          repoConnected,
+          owner: subscription?.username,
+        };
+      } catch (error) {
+        console.log(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
       // ...existing code...
     }),
 });

@@ -18,7 +18,7 @@ export const userRouter = createTRPCRouter({
         },
       });
       if (data) {
-        console.log("old user", data);
+        // console.log("old user", data);
         const {
           installationId: installationIds = [],
           subscriptions = [],
@@ -63,7 +63,7 @@ export const userRouter = createTRPCRouter({
         },
       });
 
-      console.log("new user", user);
+      // console.log("new user", user);
 
       return {
         user,
@@ -104,7 +104,7 @@ export const userRouter = createTRPCRouter({
           },
         });
 
-        console.log("new userInstallationId", userInstallationId);
+        // console.log("new userInstallationId", userInstallationId);
         return { success: true, data: userInstallationId };
       } catch (error) {
         throw new TRPCError({
