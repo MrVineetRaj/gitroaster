@@ -148,7 +148,7 @@ model Plan {
 model Subscription {
   subscriptionId String @id
   planId String 
-  orgname String 
+  orgname String   @unique
   username String 
   status String  @default("pending")
   cycleStart DateTime?

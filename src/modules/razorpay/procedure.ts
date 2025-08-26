@@ -32,7 +32,7 @@ export const razorPayRouter = createTRPCRouter({
 
     const prevPlanMetadata: Record<string, (typeof oldPlans)[0]> = {};
 
-    console.log(oldPlans);
+    // console.log(oldPlans);
     oldPlans.forEach((plan) => {
       prevPlanMetadata[plan.planId] = plan;
     });

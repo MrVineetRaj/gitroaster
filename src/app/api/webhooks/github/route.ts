@@ -70,7 +70,7 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
-    console.log(installation_id);
+    // console.log(installation_id);
 
     // const isPrReviewEnabled = await db.connectedRepo.findUnique({
     //   where: {
@@ -166,7 +166,7 @@ export const POST = async (req: NextRequest) => {
       return NextResponse.json({ message: "Repo isn't enabled for AI review" });
     }
 
-    console.log("author :", author);
+    // console.log("author :", author);
 
     const isAllowed = await db.userAsMemberAndOrg.findUnique({
       where: {
@@ -178,7 +178,7 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
-    console.log("isAllowed :", isAllowed);
+    // console.log("isAllowed :", isAllowed);
     if (!isAllowed) {
       return NextResponse.json({ message: "Author isn't allowed" });
     }
@@ -206,7 +206,7 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
-    console.log("subscription :", subscription);
+    // console.log("subscription :", subscription);
 
     const orgDataFromDb = await db.orgRepo.findUnique({
       where: {

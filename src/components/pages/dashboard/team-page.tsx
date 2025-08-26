@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CheckIcon, XOctagon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 export const ManageTeam = () => {
   const { defaultOrg, username } = useAuthStore();
@@ -374,6 +375,37 @@ export const ManageInvitations = () => {
     </Tabs>
   );
 };
+
+export const OrgList = () => {
+  const trpc = useTRPC();
+  const { data: orgs, isPending: loadingOrgs } = useQuery(
+    trpc.teamRouter.getTeamMemberOrgs.queryOptions()
+  );
+
+  if (loadingOrgs) return <>Loading</>;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {orgs && orgs?.length > 0 ? (
+        orgs?.map((org) => (
+          <Link
+            href={`/dashboard/team/organization/${org.orgname}`}
+            key={org.id}
+            className="w-full bg-card p-4 rounded-md border hover:bg-primary/20 transition-all duration-300"
+          >
+            <h3 className="text-lg font-bold">{org.orgname}</h3>
+          </Link>
+        ))
+      ) : (
+        <div className="">
+          <h1 className="w-full py-[16vh] text-center text-2xl font-semibold italic">
+            You are not part of any organization <br /> as a team member
+          </h1>
+        </div>
+      )}
+    </div>
+  );
+};
 export const TeamPage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -400,7 +432,9 @@ export const TeamPage = () => {
           <TabsContent value="team">
             <ManageTeam />
           </TabsContent>
-          <TabsContent value="orgs">Orgs</TabsContent>
+          <TabsContent value="orgs">
+            <OrgList />
+          </TabsContent>
           <TabsContent value="invitations">
             <ManageInvitations />
           </TabsContent>
