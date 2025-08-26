@@ -50,7 +50,6 @@ const excludedExtensions = [
 ];
 
 const excludeFileWords = ["lock", "migration"];
-let triggerCount = 0;
 
 export const reviewGenerator = inngest.createFunction(
   { id: "review-generator" },
@@ -356,7 +355,7 @@ export const reviewGenerator = inngest.createFunction(
               });
             }
 
-         await db.pullRequest.upsert({
+            await db.pullRequest.upsert({
               where: {
                 repoFullName_pullNumber: {
                   repoFullName: `${owner!}/${repo!}`,
@@ -381,7 +380,6 @@ export const reviewGenerator = inngest.createFunction(
                 status: PullRequestStatus.SUMMARIZED,
               },
             });
-
           } catch (error) {
             // console.log(error);
           }
