@@ -185,7 +185,10 @@ export const DashboardPage = async () => {
             <div className="flex-1 flex flex-col gap-2">
               {pullRequestData?.length > 0 ? (
                 pullRequestData.slice(0, 5)?.map((item) => (
-                  <div className="rounded-none p-4 bg-card" key={item.id}>
+                  <div
+                    className={"rounded-none p-4  border bg-card hover:bg-primary/20"}
+                    key={item.id}
+                  >
                     <span className="flex items-center justify-between">
                       <h3 className="flex items-center justify-between font-bold text-lg gap-2">
                         <span className="">{item?.title} </span>
