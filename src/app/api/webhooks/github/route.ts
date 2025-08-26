@@ -155,6 +155,17 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
+    const isRepoEnabled = await db.orgRepo.findUnique({
+      where: {
+        repoFullName: `${owner!}/${repo!}`,
+        isConnected: true,
+      },
+    });
+
+    if (!isRepoEnabled) {
+      return NextResponse.json({ message: "Repo isn't enabled for AI review" });
+    }
+
     console.log("author :", author);
 
     const isAllowed = await db.userAsMemberAndOrg.findUnique({
@@ -169,7 +180,7 @@ export const POST = async (req: NextRequest) => {
 
     console.log("isAllowed :", isAllowed);
     if (!isAllowed) {
-      return NextResponse.json({ message: "Author wasn't allowed" });
+      return NextResponse.json({ message: "Author isn't allowed" });
     }
 
     const currDate = new Date();
