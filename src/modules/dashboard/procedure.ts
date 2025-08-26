@@ -3,7 +3,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { db } from "@/lib/prisma";
 // import { ReviewStatus } from "@/generated/prisma";
 import { TRPCError } from "@trpc/server";
-import { SubscriptionStatus } from "@/generated/prisma";
+import { PullRequestStatus, SubscriptionStatus } from "@/generated/prisma";
 // import { razorpayInstance } from "../razorpay/utils";
 
 export const dashboardRouter = createTRPCRouter({
@@ -55,6 +55,7 @@ export const dashboardRouter = createTRPCRouter({
                 gte: startDate, // start date
                 lte: endDate, // end date
               },
+              status: PullRequestStatus.SUCCESS,
             },
             _count: {
               id: true, // count of pull requests
@@ -128,6 +129,7 @@ export const dashboardRouter = createTRPCRouter({
         where: {
           ownerUsername: ctx?.auth?.githubUsername,
           orgname,
+          status: PullRequestStatus.SUCCESS,
         },
         _sum: {
           timeTakenToReview: true,
@@ -181,6 +183,7 @@ export const dashboardRouter = createTRPCRouter({
           createdAt: {
             gte: cycleStartAt,
           },
+          status: PullRequestStatus.SUCCESS,
         },
         _sum: {
           timeTakenToReview: true,
