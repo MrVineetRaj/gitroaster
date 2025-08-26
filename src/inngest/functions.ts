@@ -174,6 +174,31 @@ export const reviewGenerator = inngest.createFunction(
           } catch (error) {
             // console.log(error);
           }
+          await db.pullRequest.upsert({
+            where: {
+              repoFullName_pullNumber: {
+                repoFullName: `${owner!}/${repo!}`,
+                pullNumber: +pull_number!,
+              },
+            },
+            update: {
+              timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+              charCount: fileContent.length,
+              tokenCount: tokenCount,
+              status: PullRequestStatus.SUCCESS,
+            },
+            create: {
+              ownerUsername,
+              orgname: owner,
+              repoFullName: `${owner!}/${repo!}`,
+              pullNumber: +pull_number!,
+              timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+              author,
+              charCount: fileContent.length,
+              tokenCount: tokenCount,
+              status: PullRequestStatus.SUCCESS,
+            },
+          });
         });
       } else {
         await step.run(
@@ -197,35 +222,34 @@ export const reviewGenerator = inngest.createFunction(
             } catch (error) {
               // console.log(error);
             }
+            await db.pullRequest.upsert({
+              where: {
+                repoFullName_pullNumber: {
+                  repoFullName: `${owner!}/${repo!}`,
+                  pullNumber: +pull_number!,
+                },
+              },
+              update: {
+                timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+                charCount: fileContent.length,
+                tokenCount: tokenCount,
+                status: PullRequestStatus.SUMMARIZED,
+              },
+              create: {
+                ownerUsername,
+                orgname: owner,
+                repoFullName: `${owner!}/${repo!}`,
+                pullNumber: +pull_number!,
+                timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+                author,
+                charCount: fileContent.length,
+                tokenCount: tokenCount,
+                status: PullRequestStatus.SUMMARIZED,
+              },
+            });
           }
         );
       }
-
-      await db.pullRequest.upsert({
-        where: {
-          repoFullName_pullNumber: {
-            repoFullName: `${owner!}/${repo!}`,
-            pullNumber: +pull_number!,
-          },
-        },
-        update: {
-          timeTakenToReview: currTime ? Date.now() - currTime : 60000,
-          charCount: fileContent.length,
-          tokenCount: tokenCount,
-          status: PullRequestStatus.SUCCESS,
-        },
-        create: {
-          ownerUsername,
-          orgname: owner,
-          repoFullName: `${owner!}/${repo!}`,
-          pullNumber: +pull_number!,
-          timeTakenToReview: currTime ? Date.now() - currTime : 60000,
-          author,
-          charCount: fileContent.length,
-          tokenCount: tokenCount,
-          status: PullRequestStatus.SUCCESS,
-        },
-      });
       return { char: fileContent.length, token: tokenCount };
     }
 
@@ -281,6 +305,32 @@ export const reviewGenerator = inngest.createFunction(
           } catch (error) {
             // console.log(error);
           }
+
+          await db.pullRequest.upsert({
+            where: {
+              repoFullName_pullNumber: {
+                repoFullName: `${owner!}/${repo!}`,
+                pullNumber: +pull_number!,
+              },
+            },
+            update: {
+              timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+              charCount: fileContent.length,
+              tokenCount: tokenCount,
+              status: PullRequestStatus.SUCCESS,
+            },
+            create: {
+              ownerUsername,
+              orgname: owner,
+              repoFullName: `${owner!}/${repo!}`,
+              pullNumber: +pull_number!,
+              timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+              author,
+              charCount: fileContent.length,
+              tokenCount: tokenCount,
+              status: PullRequestStatus.SUCCESS,
+            },
+          });
         }
       } else {
         await step.run(
@@ -301,40 +351,39 @@ export const reviewGenerator = inngest.createFunction(
                   body: aiResp.summary,
                 });
               }
+
+              await db.pullRequest.upsert({
+                where: {
+                  repoFullName_pullNumber: {
+                    repoFullName: `${owner!}/${repo!}`,
+                    pullNumber: +pull_number!,
+                  },
+                },
+                update: {
+                  timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+                  charCount: fileContent.length,
+                  tokenCount: tokenCount,
+                  status: PullRequestStatus.SUMMARIZED,
+                },
+                create: {
+                  ownerUsername,
+                  orgname: owner,
+                  repoFullName: `${owner!}/${repo!}`,
+                  pullNumber: +pull_number!,
+                  timeTakenToReview: currTime ? Date.now() - currTime : 60000,
+                  author,
+                  charCount: fileContent.length,
+                  tokenCount: tokenCount,
+                  status: PullRequestStatus.SUMMARIZED,
+                },
+              });
             } catch (error) {
               // console.log(error);
             }
           }
         );
       }
-
-      await db.pullRequest.upsert({
-        where: {
-          repoFullName_pullNumber: {
-            repoFullName: `${owner!}/${repo!}`,
-            pullNumber: +pull_number!,
-          },
-        },
-        update: {
-          timeTakenToReview: currTime ? Date.now() - currTime : 60000,
-          charCount: fileContent.length,
-          tokenCount: tokenCount,
-          status: PullRequestStatus.SUCCESS,
-        },
-        create: {
-          ownerUsername,
-          orgname: owner,
-          repoFullName: `${owner!}/${repo!}`,
-          pullNumber: +pull_number!,
-          timeTakenToReview: currTime ? Date.now() - currTime : 60000,
-          author,
-          charCount: fileContent.length,
-          tokenCount: tokenCount,
-          status: PullRequestStatus.SUCCESS,
-        },
-      });
     });
-    // console.log()
 
     return { char: fileContent.length, token: tokenCount };
   }

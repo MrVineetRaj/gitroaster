@@ -41,6 +41,11 @@ const RepoContainer = ({ repos }: Props) => {
           })
         );
       },
+      onError: (error) => {
+        toast.error(error.message, {
+          id: toastId,
+        });
+      },
     })
   );
 
@@ -55,6 +60,11 @@ const RepoContainer = ({ repos }: Props) => {
             orgname: defaultOrg,
           })
         );
+      },
+      onError: (error) => {
+        toast.error(error.message, {
+          id: toastId,
+        });
       },
     })
   );
@@ -79,7 +89,7 @@ const RepoContainer = ({ repos }: Props) => {
             <Button
               className="bg-green-500!"
               onClick={() => {
-                const toastId = toast.loading("Connecting Repo");
+                const toastId = toast.loading("Disconnecting Repo");
                 setToastId(toastId);
                 disconnectRepo.mutateAsync({
                   repoFullName: repo.full_name,
@@ -96,7 +106,7 @@ const RepoContainer = ({ repos }: Props) => {
             <Button
               className="bg-red-500!"
               onClick={() => {
-                const toastId = toast.loading("Disconnecting Repo");
+                const toastId = toast.loading("Connecting Repo");
                 setToastId(toastId);
                 connectRepo.mutateAsync({
                   repoFullName: repo.full_name,

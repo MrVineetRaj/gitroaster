@@ -62,15 +62,22 @@ export const githubRouter = createTRPCRouter({
 
         //  subscription based logic
 
-        await db.orgRepo.create({
-          data: {
+        await db.orgRepo.upsert({
+          where: {
+            repoFullName,
+          },
+          create: {
             orgname,
             repoFullName,
             isConnected: true,
             ownerUsername: ctx?.auth.githubUsername!,
           },
+          update: {
+            isConnected: true,
+          },
         });
       } catch (error) {
+        console.log(error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to connect repo try again later",
