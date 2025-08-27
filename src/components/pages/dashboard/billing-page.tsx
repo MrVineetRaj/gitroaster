@@ -26,7 +26,7 @@ export const BillingPage = () => {
   const showInterest = useMutation(
     trpc.feedbackRouter.showBillingInterests.mutationOptions({
       onSuccess: (data) => {
-        toast.success(data?.mssage || "Interest recorded", {
+        toast.success(data?.message || "Interest recorded", {
           duration: 2000,
           id: "billing-interest",
         });

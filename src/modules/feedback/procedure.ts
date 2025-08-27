@@ -26,7 +26,7 @@ export const feedbackRouter = createTRPCRouter({
           },
         });
         return {
-          mssage: "Interest recorded",
+          message: "Interest recorded",
           success: true,
         };
       } catch (error) {
@@ -51,6 +51,6 @@ export const feedbackRouter = createTRPCRouter({
       },
     });
 
-    return { mssage: "Alreayd showed interest", data: interest, success: true };
+    return { message: "Already showed interest", data: interest, success: true };
   }),
 });

@@ -150,7 +150,7 @@ export const POST = async (req: NextRequest) => {
     if (body?.includes("@gitroaster")) {
       if (body?.includes("@@ignore")) {
         return NextResponse.json({
-          message: "PR ignored for automated reviewe",
+          message: "PR ignored for automated review",
         });
       }
     }

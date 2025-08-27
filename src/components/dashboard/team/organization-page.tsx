@@ -243,7 +243,7 @@ const OrganizationPageForTeamMember = async ({
       case "BAD_REQUEST":
         return <div>Invalid organization name.</div>;
       default:
-        <div>Something went wrong</div>;
+        return <div>Something went wrong</div>;
     }
   }
 };
