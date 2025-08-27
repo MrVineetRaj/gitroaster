@@ -267,19 +267,31 @@ export const DashboardPage = async () => {
       </div>
     );
   } catch (error) {
-    // window.location.reload();
     return <div>Error loading dashboard. Please try again later.</div>;
   }
 };
 
 export const DashboardPageLoader = () => {
   return (
-    <div>
-      <div className="px-4 py-2 bg-card border-b flex flex-col gap-2">
-        <Skeleton className="w-64 h-8" />
-        <Skeleton className="w-128 h-2" />
-      </div>{" "}
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Header Skeleton */}
+      <div className="sticky top-0 z-10 bg-card border-b">
+        <div className="flex items-center justify-between p-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-32 hidden sm:block" />
+          </div>
+        </div>
+      </div>
+
       <div className="p-4 space-y-4">
+        {/* Privacy Notice */}
         <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
           <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
             <ShieldCheckIcon className="w-5 h-5" />
@@ -292,7 +304,84 @@ export const DashboardPageLoader = () => {
             comments only.
           </p>
         </div>
-        pull_request
+
+        {/* Quick Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <Card
+              className="relative overflow-hidden rounded-none"
+              key={idx}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-32" />
+                <div className="absolute z-10 top-0 right-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Usage Chart and Pull Requests Skeleton */}
+        <div className="flex gap-2">
+          {/* Usage Chart Skeleton */}
+          <div className="flex-1">
+            <Card className="rounded-none">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Skeleton className="h-5 w-32 mb-1" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] flex items-end justify-between gap-2 px-4">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className={`w-8 bg-blue-200 dark:bg-blue-800`}
+                      style={{
+                        height: `${Math.random() * 200 + 50}px`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Pull Requests Skeleton */}
+          <div className="flex-1 flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <div
+                className="rounded-none p-4 border bg-card"
+                key={idx}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-6 w-12" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
