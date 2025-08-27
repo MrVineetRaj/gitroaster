@@ -11,7 +11,7 @@ import ThemeController from "./theme-controller";
 
 export const Navbar = ({ session }: { session: Session | null }) => {
   return (
-    <header className="bg-card w-full flex flex-col items-center border-b">
+    <header className="bg-background   w-full flex flex-col items-center border-b">
       <nav className="max-w-[1200px] px-4 flex items-center justify-between py-2 w-full">
         <Link href={"/"} className="flex items-center gap-2">
           <Image
