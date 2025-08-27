@@ -21,7 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { CheckIcon, XOctagon } from "lucide-react";
+import { CheckIcon, LogOutIcon, XOctagon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
@@ -59,6 +59,25 @@ export const ManageTeam = () => {
       },
       onError: (error) => {
         toast.error("Failed to update member access: " + error.message, {
+          id: "member-access-update",
+        });
+      },
+    })
+  );
+  const removeMemberFromTeam = useMutation(
+    trpc.teamRouter.removeTeamMember.mutationOptions({
+      onSuccess: () => {
+        toast.success("Member status updated successfully", {
+          id: "member-access-update",
+        });
+        queryClient.invalidateQueries(
+          trpc.teamRouter.getTeamMembers.queryOptions({
+            orgname: defaultOrg,
+          })
+        );
+      },
+      onError: (error) => {
+        toast.error("Failed to update member status: " + error.message, {
           id: "member-access-update",
         });
       },
@@ -150,11 +169,14 @@ export const ManageTeam = () => {
         </AlertDialog>
       </div>
       <div className="bg-card p-2 mt-2 rounded-lg flex flex-col gap-2">
-        {loadingMembers
-          ? Array.from({ length: 5 }).map((_, idx) => (
-              <Skeleton className="w-full h-10" key={idx} />
-            ))
-          : members?.map((member, idx) => (
+        {loadingMembers ? (
+          Array.from({ length: 5 }).map((_, idx) => (
+            <Skeleton className="w-full h-10" key={idx} />
+          ))
+        ) : (
+          <>
+            <h2 className="text-lg font-bold text-primary">Present Members</h2>
+            {members?.presentMembers?.map((member, idx) => (
               <div
                 className="flex items-center justify-between"
                 key={member.id}
@@ -166,29 +188,66 @@ export const ManageTeam = () => {
                 {username === member?.teamMemberUsername ? (
                   <Button disabled={true}>Admin</Button>
                 ) : (
-                  <Button
-                    onClick={() => {
-                      toast.loading("Updating member access", {
-                        id: "member-access-update",
-                      });
-                      toggleMemberAccess.mutateAsync({
-                        orgname: defaultOrg,
-                        teamMemberUsername: member?.teamMemberUsername,
-                        isAllowed: !member?.isAllowed,
-                      });
-                    }}
-                    className={cn(
-                      "",
-                      member?.isAllowed
-                        ? "!bg-green-500 !text-white"
-                        : "!bg-red-500 !text-white"
-                    )}
-                  >
-                    {member?.isAllowed ? "Has Access" : "No Access"}
-                  </Button>
+                  <span className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        toast.loading("Updating member access", {
+                          id: "member-access-update",
+                        });
+                        toggleMemberAccess.mutateAsync({
+                          orgname: defaultOrg,
+                          teamMemberUsername: member?.teamMemberUsername,
+                          isAllowed: !member?.isAllowed,
+                        });
+                      }}
+                      className={cn(
+                        "",
+                        member?.isAllowed
+                          ? "!bg-green-500 !text-white"
+                          : "!bg-red-500 !text-white"
+                      )}
+                    >
+                      {member?.isAllowed ? "Has Access" : "No Access"}
+                    </Button>
+                    <Button
+                      variant={"destructive"}
+                      onClick={() => {
+                        toast.loading("Updating member status", {
+                          id: "member-access-update",
+                        });
+                        removeMemberFromTeam.mutateAsync({
+                          orgname: defaultOrg,
+                          username: member?.teamMemberUsername,
+                        });
+                      }}
+                    >
+                      <LogOutIcon />
+                    </Button>
+                  </span>
                 )}
               </div>
             ))}
+
+            {members?.pastMembers?.length! > 0 && (
+              <>
+                <h2 className="mt-4 pt-4 border-t text-lg text-destructive font-bold">
+                  Past Members
+                </h2>
+                {members?.pastMembers?.map((member, idx) => (
+                  <div
+                    className="flex items-center justify-between"
+                    key={member.id}
+                  >
+                    <span className="font-bold">
+                      {idx + 1 + ". " + member?.teamMemberUsername}{" "}
+                    </span>
+                    <Badge variant={"destructive"}>Left</Badge>
+                  </div>
+                ))}
+              </>
+            )}
+          </>
+        )}
       </div>
     </>
   );
@@ -386,14 +445,20 @@ export const OrgList = () => {
 
   return (
     <div className="flex flex-col gap-2">
-      {orgs && orgs?.length > 0 ? (
-        orgs?.map((org) => (
+      <h2 className="text-xl font-bold  text-primary">Current Organizations</h2>
+      {orgs && orgs.presentOrgs?.length > 0 ? (
+        orgs.presentOrgs?.map((org) => (
           <Link
             href={`/dashboard/team/organization/${org.orgname}`}
             key={org.id}
-            className="w-full bg-card p-4 rounded-md border hover:bg-primary/20 transition-all duration-300"
+            className="w-full bg-card p-4 rounded-md border hover:bg-primary/20 transition-all duration-300 flex items-center justify-between"
           >
             <h3 className="text-lg font-bold">{org.orgname}</h3>
+            {org.isAllowed ? (
+              <Badge variant={"default"}>Has Access</Badge>
+            ) : (
+              <Badge variant={"destructive"}>No Access</Badge>
+            )}
           </Link>
         ))
       ) : (
@@ -403,9 +468,26 @@ export const OrgList = () => {
           </h1>
         </div>
       )}
+      {orgs && orgs.pastOrgs?.length > 0 && (
+        <>
+          <h2 className="text-xl font-bold mt-4 pt-4 border-t text-destructive">
+            Past Organizations
+          </h2>
+          {orgs.pastOrgs?.map((org) => (
+            <span
+              key={org.id}
+              className="w-full bg-card p-4 rounded-md border flex items-center justify-between  transition-all duration-300"
+            >
+              <h3 className="text-lg font-bold">{org.orgname}</h3>
+              <Badge variant={"destructive"}>Left</Badge>
+            </span>
+          ))}
+        </>
+      )}
     </div>
   );
 };
+
 export const TeamPage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">

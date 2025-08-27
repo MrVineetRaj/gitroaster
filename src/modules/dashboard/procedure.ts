@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { createTRPCRouter, teamMemberProtectedProcedure } from "@/trpc/init";
 import { db } from "@/lib/prisma";
 // import { ReviewStatus } from "@/generated/prisma";
 import { TRPCError } from "@trpc/server";
@@ -11,7 +11,7 @@ import {
 // import { razorpayInstance } from "../razorpay/utils";
 
 export const dashboardRouter = createTRPCRouter({
-  getPRData: protectedProcedure
+  getPRData: teamMemberProtectedProcedure
     .input(
       z.object({
         page: z.number(),
@@ -34,7 +34,7 @@ export const dashboardRouter = createTRPCRouter({
 
       return pullRequests;
     }),
-  getUsageData: protectedProcedure
+  getUsageData: teamMemberProtectedProcedure
     .input(
       z.object({
         days: z.number(),
@@ -67,6 +67,9 @@ export const dashboardRouter = createTRPCRouter({
             _sum: {
               tokenCount: true, // sum of tokens
             },
+            orderBy:{
+              createdAt:"asc"
+            }
           })
           .then((results) => {
             // Transform to the desired format
@@ -120,7 +123,7 @@ export const dashboardRouter = createTRPCRouter({
       }
     }),
 
-  getQuickCard: protectedProcedure
+  getQuickCard: teamMemberProtectedProcedure
     .input(
       z.object({
         orgname: z.string(),
@@ -128,8 +131,6 @@ export const dashboardRouter = createTRPCRouter({
     )
     .query(async ({ input: { orgname }, ctx }) => {
       try {
-
-
         const pullRequestData = await db.pullRequest.aggregate({
           where: {
             // ownerUsername: ctx?.auth?.githubUsername,

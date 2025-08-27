@@ -4,7 +4,7 @@ import { db } from "@/lib/prisma";
 // import { ReviewStatus } from "@/generated/prisma";
 import { TRPCError } from "@trpc/server";
 
-import { InvitationStatus } from "@/generated/prisma";
+import { InvitationStatus, UserAsMemberAndOrg } from "@/generated/prisma";
 // import { razorpayInstance } from "../razorpay/utils";
 
 export const teamRouter = createTRPCRouter({
@@ -21,7 +21,25 @@ export const teamRouter = createTRPCRouter({
         },
       });
 
-      return members ?? [];
+      const pastAndPresentMember: {
+        presentMembers: UserAsMemberAndOrg[];
+        pastMembers: UserAsMemberAndOrg[];
+      } = {
+        presentMembers: [],
+        pastMembers: [],
+      };
+
+      members.forEach((member) => {
+        if (member.isPastMember) {
+          pastAndPresentMember.pastMembers.push(member);
+        } else {
+          pastAndPresentMember.presentMembers.push(member);
+        }
+      });
+
+      console.log(members);
+
+      return pastAndPresentMember;
     }),
   inviteTeamMembers: protectedProcedure
     .input(
@@ -39,6 +57,27 @@ export const teamRouter = createTRPCRouter({
           username,
           email: email,
           isResponded: false,
+        },
+      });
+    }),
+  removeTeamMember: protectedProcedure
+    .input(
+      z.object({
+        orgname: z.string(),
+        username: z.string(),
+      })
+    )
+    .mutation(async ({ input: { orgname, username }, ctx }) => {
+      await db.userAsMemberAndOrg.update({
+        where: {
+          orgname_teamMemberUsername: {
+            orgname,
+            teamMemberUsername: username,
+          },
+        },
+        data: {
+          isPastMember: true,
+          isAllowed: false,
         },
       });
     }),
@@ -141,13 +180,30 @@ export const teamRouter = createTRPCRouter({
         });
       }
     }),
+
   getTeamMemberOrgs: protectedProcedure.query(async ({ ctx }) => {
-    const org = await db.userAsMemberAndOrg.findMany({
+    const orgs = await db.userAsMemberAndOrg.findMany({
       where: {
         teamMemberUsername: ctx?.auth.githubUsername,
       },
     });
 
-    return org || [];
+    const pastAndPresentOrg: {
+      pastOrgs: UserAsMemberAndOrg[];
+      presentOrgs: UserAsMemberAndOrg[];
+    } = {
+      pastOrgs: [],
+      presentOrgs: [],
+    };
+
+    orgs.forEach((org) => {
+      if (org.isPastMember) {
+        pastAndPresentOrg.pastOrgs.push(org);
+      } else {
+        pastAndPresentOrg.presentOrgs.push(org);
+      }
+    });
+
+    return pastAndPresentOrg;
   }),
 });

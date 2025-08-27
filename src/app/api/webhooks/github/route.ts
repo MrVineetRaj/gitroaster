@@ -145,6 +145,15 @@ export const POST = async (req: NextRequest) => {
 
     const author = prData.user?.login;
     const title = prData.title;
+    const body = prData.body;
+
+    if (body?.includes("@gitroaster")) {
+      if (body?.includes("@@ignore")) {
+        return NextResponse.json({
+          message: "PR ignored for automated reviewe",
+        });
+      }
+    }
 
     // console.log(author);
     // let isLargePr = false;
@@ -238,6 +247,7 @@ export const POST = async (req: NextRequest) => {
     });
 
     let onTrial = false;
+
     if (!user) {
       return NextResponse.json({ message: "No user found" });
     }
