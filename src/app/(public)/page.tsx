@@ -416,7 +416,7 @@ const LandingPage = () => {
               </Button>
             </Link>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-              7-day free trial • No setup fees • Cancel anytime
+              {"7-day free trial • No setup fees • Cancel anytime"}
             </p>
           </div>
         </div>
@@ -458,7 +458,7 @@ const LandingPage = () => {
 
           <div className="text-center mt-12">
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Still have questions? We're here to help.
+              {"Still have questions? We're here to help."}
             </p>
             <Button variant="outline" className="rounded-full">
               Contact Support
@@ -470,8 +470,7 @@ const LandingPage = () => {
       <footer className="relative w-full text-center py-8 text-gray-500 dark:text-gray-400 text-sm bg-background">
         <div className="relative max-w-6xl mx-auto px-4">
           <p>
-            &copy; {new Date().getFullYear()} GitRoaster • Built by developers,
-            for developers
+            &copy; {new Date().getFullYear()} {"GitRoaster • Built by developers, for developers"}
           </p>
         </div>
       </footer>
