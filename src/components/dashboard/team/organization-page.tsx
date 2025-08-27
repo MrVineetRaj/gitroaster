@@ -220,7 +220,31 @@ const OrganizationPageForTeamMember = async ({
     );
   } catch (error) {
     // window.location.reload();
-    return <div>Error loading dashboard. Please try again later.</div>;
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? (error as { code: string }).code
+        : undefined;
+
+    switch (code) {
+      case "FORBIDDEN":
+        return (
+          <div className="w-full h-screen flex flex-col  items-center justify-center">
+            <h1 className="text-2xl font-bold text-destructive">FORBIDDEN</h1>
+            <p className="text-muted-foreground">
+              Either you do not have access to view this organization.
+            </p>
+            <p className="text-muted-foreground">
+              Or you are not a team member of this organization.
+            </p>
+          </div>
+        );
+      case "UNAUTHORIZED":
+        return <div>Please login to continue.</div>;
+      case "BAD_REQUEST":
+        return <div>Invalid organization name.</div>;
+      default:
+        return <div>Something went wrong</div>;
+    }
   }
 };
 

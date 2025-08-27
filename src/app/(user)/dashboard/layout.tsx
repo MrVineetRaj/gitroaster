@@ -3,6 +3,7 @@ import {
   DashboardSidebar,
   DashboardSidebarLoader,
 } from "@/components/dashboard/dashboard-sidebar";
+// import { BugDetailCollector } from "@/components/shared/bug-detail-collector";
 import { caller } from "@/trpc/server";
 import React, { Suspense } from "react";
 import { Toaster } from "sonner";
@@ -20,7 +21,9 @@ export async function DashboardSidebarServer() {
         userRole={user.role}
         subscription={subscription}
         defaultOrg={user?.defaultOrg}
-        isTrial={new Date(user?.trialEndAt).getTime() > Date.now() ? true : false}
+        isTrial={
+          new Date(user?.trialEndAt).getTime() > Date.now() ? true : false
+        }
         trialEndAt={user?.trialEndAt}
       />
     </Suspense>
@@ -34,6 +37,7 @@ const UserLayout = async ({ children }: { children: React.ReactNode }) => {
         <DashboardSidebarServer />
       </Suspense>
       {children}
+      {/* <BugDetailCollector /> */}
       <Toaster position="top-center" />
     </div>
   );

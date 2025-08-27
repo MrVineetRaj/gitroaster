@@ -63,6 +63,59 @@ const isAdmin = t.middleware(async ({ next, ctx }) => {
   });
 });
 
+const isOrgTeamMember = t.middleware(async ({ next, ctx, getRawInput }) => {
+  // orgname can be in input (for queries/mutations)
+  const input = await getRawInput();
+  const orgname =
+    typeof input === "object" && input !== null && "orgname" in input
+      ? (input as { orgname: string | null }).orgname
+      : undefined;
+  console.log("input", orgname);
+
+  if (!ctx.auth?.githubUsername) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Not Authenticated",
+    });
+  }
+
+  if (!orgname) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "orgname is required",
+    });
+  }
+
+  // Check if user is a team member of the org
+  const isMember = await db.userAsMemberAndOrg.findUnique({
+    where: {
+      orgname_teamMemberUsername: {
+        orgname,
+        teamMemberUsername: ctx.auth.githubUsername,
+      },
+      isAllowed: true,
+    },
+  });
+
+  if (!isMember) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not a team member of this org",
+    });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+    },
+  });
+});
+
+// Usage:
+export const orgTeamMemberProcedure = t.procedure
+  .use(isAuthed)
+  .use(isOrgTeamMember);
+
 // const isAdmin = t.middleware(async ({ next, ctx }) => {
 //   if (!ctx.auth?.githubUsername) {
 //     throw new TRPCError({
@@ -98,4 +151,5 @@ export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure;
 export const protectedProcedure = t.procedure.use(isAuthed);
 export const adminProtectedProcedure = t.procedure.use(isAdmin);
+export const teamMemberProtectedProcedure = t.procedure.use(isOrgTeamMember);
 // export const adminProtectedProcedure = t.procedure.use(isAdmin);
