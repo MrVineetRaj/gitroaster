@@ -148,7 +148,7 @@ export const POST = async (req: NextRequest) => {
     const body = prData.body;
 
     if (body?.includes("@gitroaster")) {
-      if (body?.includes("@@ignore")) {
+      if (body?.includes("@!ignore")) {
         return NextResponse.json({
           message: "PR ignored for automated review",
         });
