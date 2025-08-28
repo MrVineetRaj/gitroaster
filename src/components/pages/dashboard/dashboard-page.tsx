@@ -45,6 +45,35 @@ export const DashboardPage = async () => {
       orgname: user?.defaultOrg || "",
     });
 
+    const {
+      repos,
+      installationIdFromGithub,
+      success: isGitroasterAppDownloaded,
+    } = await githubOctokit.getEnabledRepoForGitRoaster(
+      user?.username,
+      user?.defaultOrg,
+      installationId || "00000"
+    );
+
+    const connectedRepo = await caller.githubRouter.getAllConnectedRepo({
+      orgname: user?.defaultOrg || "",
+    });
+
+    const repoCount = repos?.length ?? 0;
+    let connectedRepoCount = 0;
+    const isAnyRepoConnected = connectedRepo.some((item) => item.isConnected);
+
+    if (isAnyRepoConnected) {
+      for (const repo of repos) {
+        for (const connected of connectedRepo) {
+          if (repo.full_name === connected.repoFullName) {
+            connectedRepoCount += 1;
+            break;
+          }
+        }
+      }
+    }
+
     const QUICK_CARD_CONTENT: {
       title: string;
       link?: string;
@@ -85,22 +114,10 @@ export const DashboardPage = async () => {
       {
         title: "Connected Repos",
         icon: GitBranchIcon,
-        stat: quickCardData.repoConnected || 0,
+        stat: connectedRepoCount || 0,
         statDesc: "Active repositories",
       },
     ];
-
-    const {
-      repos,
-      installationIdFromGithub,
-      success: isGitroasterAppDownloaded,
-    } = await githubOctokit.getEnabledRepoForGitRoaster(
-      user?.username,
-      user?.defaultOrg,
-      installationId || "00000"
-    );
-
-    const repoCount = repos?.length ?? 0;
 
     const appManagementURL =
       user.username === user.defaultOrg
