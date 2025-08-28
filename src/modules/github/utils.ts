@@ -47,6 +47,7 @@ class GithubOctokit {
           const repos: GitHubRepo[] = reposResponse.data
             .repositories as GitHubRepo[];
 
+          console.log(repos);
           return {
             success: true,
             message: "INSTALLATION_FOUND",
@@ -92,6 +93,8 @@ class GithubOctokit {
 
             const repos: GitHubRepo[] = reposResponse.data
               .repositories as GitHubRepo[];
+
+            console.log(repos);
 
             return {
               success: true,
@@ -146,6 +149,7 @@ class GithubOctokit {
           const repos: GitHubRepo[] = reposResponse.data
             .repositories as GitHubRepo[];
 
+          console.log(repos);
           return {
             success: true,
             message: "INSTALLATION_FOUND_AND_UPDATED",
@@ -182,6 +186,7 @@ class GithubOctokit {
           const repos: GitHubRepo[] = reposResponse.data
             .repositories as GitHubRepo[];
 
+          console.log(repos);
           return {
             success: true,
             message: "INSTALLATION_FOUND",
@@ -223,6 +228,7 @@ class GithubOctokit {
             const repos: GitHubRepo[] = reposResponse.data
               .repositories as GitHubRepo[];
 
+            console.log(repos);
             return {
               success: true,
               message: "INSTALLATION_FOUND",
@@ -273,6 +279,7 @@ class GithubOctokit {
           const repos: GitHubRepo[] = reposResponse.data
             .repositories as GitHubRepo[];
 
+          console.log(repos);
           return {
             success: true,
             message: "INSTALLATION_FOUND",
