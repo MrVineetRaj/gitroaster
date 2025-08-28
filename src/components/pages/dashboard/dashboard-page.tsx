@@ -90,19 +90,27 @@ export const DashboardPage = async () => {
       },
     ];
 
-    const { repos, installationIdFromGithub } =
-      await githubOctokit.getEnabledRepoForGitRoaster(
-        user?.username,
-        user?.defaultOrg,
-        installationId || "00000"
-      );
+    const {
+      repos,
+      installationIdFromGithub,
+      success: isGitroasterAppDownloaded,
+    } = await githubOctokit.getEnabledRepoForGitRoaster(
+      user?.username,
+      user?.defaultOrg,
+      installationId || "00000"
+    );
 
     const repoCount = repos?.length ?? 0;
 
     const appManagementURL =
       user.username === user.defaultOrg
-        ? `https://github.com/settings/installations/${installationId}`
-        : `https://github.com/organizations/${user.defaultOrg}/settings/installations/${installationId}`;
+        ? `https://github.com/settings/installations/${
+            installationId || "00000"
+          }`
+        : `https://github.com/organizations/${
+            user.defaultOrg
+          }/settings/installations/${installationId || "00000"}`;
+
     const appInstallationURL = `https://github.com/apps/gitroaster`;
 
     return (
@@ -183,10 +191,12 @@ export const DashboardPage = async () => {
               <GitroasterUsage chartData={chartData} />
             </div>
             <div className="flex-1 flex flex-col gap-2">
-              {pullRequestData?.length > 0 ? (
+              {isGitroasterAppDownloaded && pullRequestData?.length > 0 ? (
                 pullRequestData.slice(0, 5)?.map((item) => (
                   <div
-                    className={"rounded-none p-4  border bg-card hover:bg-primary/20"}
+                    className={
+                      "rounded-none p-4  border bg-card hover:bg-primary/20"
+                    }
                     key={item.id}
                   >
                     <span className="flex items-center justify-between">
@@ -308,10 +318,7 @@ export const DashboardPageLoader = () => {
         {/* Quick Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
           {Array.from({ length: 4 }).map((_, idx) => (
-            <Card
-              className="relative overflow-hidden rounded-none"
-              key={idx}
-            >
+            <Card className="relative overflow-hidden rounded-none" key={idx}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-4 w-4" />
@@ -358,10 +365,7 @@ export const DashboardPageLoader = () => {
           {/* Pull Requests Skeleton */}
           <div className="flex-1 flex flex-col gap-2">
             {Array.from({ length: 5 }).map((_, idx) => (
-              <div
-                className="rounded-none p-4 border bg-card"
-                key={idx}
-              >
+              <div className="rounded-none p-4 border bg-card" key={idx}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-5 w-48" />
