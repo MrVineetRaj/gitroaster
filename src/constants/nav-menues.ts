@@ -27,12 +27,12 @@ export const DASHBOARD_NAV_MENU = [
     icon: Users2Icon,
     badge: null,
   },
-  // {
-  //   title: "Config",
-  //   href: "/dashboard/config",
-  //   icon: CogIcon,
-  //   badge: null,
-  // },
+  {
+    title: "Config",
+    href: "/dashboard/config",
+    icon: CogIcon,
+    badge: null,
+  },
 ];
 
 export const PROFILE_MENU = [

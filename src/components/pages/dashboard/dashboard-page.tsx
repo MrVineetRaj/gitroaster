@@ -133,7 +133,7 @@ export const DashboardPage = async () => {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-card border-b">
+        <div className="sticky top-0 z-10 bg-card border-b h-18">
           <div className="flex items-center justify-between p-2">
             <div className="space-y-1">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-3">
@@ -296,7 +296,7 @@ export const DashboardPageLoader = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header Skeleton */}
-      <div className="sticky top-0 z-10 bg-card border-b">
+      <div className="sticky top-0 z-10 bg-card border-b h-18">
         <div className="flex items-center justify-between p-2">
           <div className="space-y-1">
             <div className="flex items-center gap-3">

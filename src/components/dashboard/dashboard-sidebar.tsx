@@ -194,7 +194,7 @@ export const DashboardSidebar = ({
           {/* Header */}
           <SidebarHeader
             className={cn(
-              "border-b p-4 transition-all duration-300 bg-card",
+              "border-b p-4 transition-all duration-300 bg-card h-18",
               isCollapsed ? "px-2" : "px-4"
             )}
           >
@@ -495,7 +495,7 @@ export const DashboardSidebarLoader = () => {
           {/* Header */}
           <SidebarHeader
             className={cn(
-              "border-b p-4 transition-all duration-300 bg-card",
+              "border-b p-4 transition-all duration-300 bg-card h-18",
               isCollapsed ? "px-2" : "px-4"
             )}
           >
