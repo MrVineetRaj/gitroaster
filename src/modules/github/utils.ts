@@ -24,7 +24,6 @@ class GithubOctokit {
     orgname: string,
     installationId: string
   ) {
-    console.log("installationId", username, installationId, installationId);
     const appOctokit = this.appOctokit;
 
     if (username === orgname) {
@@ -55,10 +54,59 @@ class GithubOctokit {
             installationIdFromGithub: installationId,
           };
         } catch (error) {
-          return {
-            success: false,
-            message: "INSTALLATION_NOT_FOUND",
-          };
+          try {
+            const { data: installations } =
+              await appOctokit.apps.listInstallations();
+            // const installations = installationsResponse.data;
+
+            let installationIdForCurrentUser: string | null = null;
+
+            for (const installation of installations) {
+              if (installation?.account?.login === username) {
+                installationIdForCurrentUser = String(
+                  installation.id
+                ) as string;
+              }
+            }
+
+            if (!installationIdForCurrentUser) {
+              return {
+                success: false,
+                message: "INSTALLATION_NOT_FOUND",
+                repos: [],
+                installationIdFromGithub: "",
+              };
+            }
+
+            await caller.userRouter.updateInstallationId({
+              installationId: installationIdForCurrentUser,
+              orgname,
+            });
+
+            const installationOctokit = new Octokit({
+              auth: installationIdForCurrentUser,
+            });
+
+            const reposResponse =
+              await installationOctokit.apps.listReposAccessibleToInstallation();
+
+            const repos: GitHubRepo[] = reposResponse.data
+              .repositories as GitHubRepo[];
+
+            return {
+              success: true,
+              message: "INSTALLATION_FOUND_AND_UPDATED",
+              repos: repos,
+              installationIdFromGithub: installationIdForCurrentUser,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: "INSTALLATION_NOT_FOUND",
+              repos: [],
+              installationIdFromGithub: "",
+            };
+          }
         }
       } else {
         try {
@@ -78,6 +126,8 @@ class GithubOctokit {
             return {
               success: false,
               message: "INSTALLATION_NOT_FOUND",
+              repos: [],
+              installationIdFromGithub: "",
             };
           }
 
@@ -106,6 +156,8 @@ class GithubOctokit {
           return {
             success: false,
             message: "INSTALLATION_NOT_FOUND",
+            repos: [],
+            installationIdFromGithub: "",
           };
         }
       }
@@ -137,10 +189,54 @@ class GithubOctokit {
             installationIdFromGithub: installationId,
           };
         } catch (error) {
-          return {
-            success: false,
-            message: "INSTALLATION_NOT_FOUND",
-          };
+          try {
+            const { data: installations } =
+              await appOctokit.apps.listInstallations();
+            let installationIdForCurrentOrg: string | null = null;
+            for (const installation of installations) {
+              if (installation?.account?.login === orgname) {
+                installationIdForCurrentOrg = String(installation.id) as string;
+              }
+            }
+
+            if (!installationIdForCurrentOrg) {
+              return {
+                success: false,
+                message: "INSTALLATION_NOT_FOUND",
+                repos: [],
+                installationIdFromGithub: "",
+              };
+            }
+
+            await caller.userRouter.updateInstallationId({
+              installationId: installationIdForCurrentOrg,
+              orgname,
+            });
+
+            const installationOctokit = new Octokit({
+              auth: installationIdForCurrentOrg,
+            });
+
+            const reposResponse =
+              await installationOctokit.apps.listReposAccessibleToInstallation();
+
+            const repos: GitHubRepo[] = reposResponse.data
+              .repositories as GitHubRepo[];
+
+            return {
+              success: true,
+              message: "INSTALLATION_FOUND",
+              repos: repos,
+              installationIdFromGithub: installationIdForCurrentOrg,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: "INSTALLATION_NOT_FOUND",
+              repos: [],
+              installationIdFromGithub: "",
+            };
+          }
         }
       } else {
         try {
@@ -157,6 +253,8 @@ class GithubOctokit {
             return {
               success: false,
               message: "INSTALLATION_NOT_FOUND",
+              repos: [],
+              installationIdFromGithub: "",
             };
           }
 
@@ -185,6 +283,8 @@ class GithubOctokit {
           return {
             success: false,
             message: "INSTALLATION_NOT_FOUND",
+            repos: [],
+            installationIdFromGithub: "",
           };
         }
       }

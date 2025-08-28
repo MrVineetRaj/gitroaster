@@ -45,8 +45,12 @@ export const userRouter = createTRPCRouter({
       const trialEndAt = new Date(currDate.getTime() + 8 * 24 * 60 * 60 * 1000);
       trialEndAt.setHours(0, 0, 0, 0);
 
-      const user = await db.user.create({
-        data: {
+      const user = await db.user.upsert({
+        where: {
+          username: ctx.auth?.githubUsername,
+        },
+        update: {},
+        create: {
           username: ctx?.auth?.githubUsername!,
           email: ctx?.auth?.user?.email!,
           defaultOrg: ctx?.auth?.githubUsername!,
@@ -55,8 +59,15 @@ export const userRouter = createTRPCRouter({
         },
       });
 
-      await db.userAsMemberAndOrg.create({
-        data: {
+      await db.userAsMemberAndOrg.upsert({
+        where: {
+          orgname_teamMemberUsername: {
+            orgname: user.defaultOrg,
+            teamMemberUsername: user.username,
+          },
+        },
+        update: {},
+        create: {
           orgname: user.defaultOrg,
           teamMemberUsername: user.username,
           isAllowed: true,
@@ -74,7 +85,7 @@ export const userRouter = createTRPCRouter({
       console.log(error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Something went wrong",
+        message: "Failed to sync user",
       });
     }
   }),

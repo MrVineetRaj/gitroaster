@@ -28,12 +28,15 @@ export const RepositoriesPage = async () => {
 
     // console.log("installationId");
 
-    const { repos, installationIdFromGithub } =
-      await githubOctokit.getEnabledRepoForGitRoaster(
-        user?.username,
-        user?.defaultOrg,
-        installationId || "00000"
-      );
+    const {
+      repos,
+      installationIdFromGithub,
+      success: isGitroasterAppDownloaded,
+    } = await githubOctokit.getEnabledRepoForGitRoaster(
+      user?.username,
+      user?.defaultOrg,
+      installationId || "00000"
+    );
 
     // if (installationId !== installationIdFromGithub) {
     //   console.log(
@@ -48,8 +51,12 @@ export const RepositoriesPage = async () => {
 
     const appManagementURL =
       user.username === user.defaultOrg
-        ? `https://github.com/settings/installations/${installationId}`
-        : `https://github.com/organizations/${user.defaultOrg}/settings/installations/${installationId}`;
+        ? `https://github.com/settings/installations/${
+            installationId || "00000"
+          }`
+        : `https://github.com/organizations/${
+            user.defaultOrg
+          }/settings/installations/${installationId || "00000"}`;
     const appInstallationURL = `https://github.com/apps/gitroaster`;
 
     return (
@@ -69,7 +76,7 @@ export const RepositoriesPage = async () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {installationIdFromGithub && (
+              {isGitroasterAppDownloaded && installationIdFromGithub && (
                 <>
                   <Button asChild variant="outline" className="hidden sm:flex">
                     <Link
@@ -110,7 +117,7 @@ export const RepositoriesPage = async () => {
                   <CardTitle className="flex items-center gap-2">
                     <GitBranchIcon className="w-5 h-5 text-blue-500" />
                     Repository List
-                    {repoCount > 0 && (
+                    {isGitroasterAppDownloaded && repoCount > 0 && (
                       <Badge variant="secondary" className="ml-2">
                         {repoCount}
                       </Badge>
@@ -234,7 +241,7 @@ export const RepositoriesPage = async () => {
     );
   } catch (error) {
     // window.location.reload();
-    return null;
+    return "Something went wrong on repo page, please try again later.";
   }
 };
 
@@ -290,7 +297,10 @@ export const RepositoriesPageLoader = () => {
             {/* Repository Items Skeleton */}
             <div className="divide-y">
               {Array.from({ length: 5 }).map((_, idx) => (
-                <div key={idx} className="p-4 flex items-center justify-between">
+                <div
+                  key={idx}
+                  className="p-4 flex items-center justify-between"
+                >
                   <div className="flex items-center gap-3 flex-1">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="space-y-2 flex-1">
