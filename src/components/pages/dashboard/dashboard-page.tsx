@@ -252,17 +252,11 @@ export const DashboardPage = async () => {
                   </p>
                   <Button asChild variant="outline">
                     <Link
-                      href={
-                        repoCount > 0
-                          ? `/dashboard/repositories`
-                          : appInstallationURL
-                      }
-                      target={repoCount > 0 ? "_self" : "_blank"}
+                      href={`/dashboard/repositories`}
                       className="flex gap-2 items-center"
                     >
-                      {repoCount
-                        ? "View Connected Repositories"
-                        : "Connect Repositories"}
+                      {"Manage connected Repositories"}
+
                       <ExternalLinkIcon className="w-3 h-3" />
                     </Link>
                   </Button>
