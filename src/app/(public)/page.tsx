@@ -27,6 +27,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { DemoVideoPlayer } from "@/components/shared/demo-video-player";
 
 const problemStats = [
   { metric: "73%", desc: "of teams wait 24+ hours for code reviews" },
@@ -146,6 +147,7 @@ const faqs = [
 ];
 
 const LandingPage = () => {
+  // const [isVideoMuted, setIsVideoMuted] = React.useState(true);
   return (
     <div
       className="flex-1 flex flex-col items-center w-[100%] max-w-[100%] relative overflow-x-hidden bg-background"
@@ -230,22 +232,9 @@ const LandingPage = () => {
           </div>
 
           {/* Video Placeholder */}
-          <div className="relative w-full max-w-4xl mx-auto">
-            <div className="aspect-video bg-gray-900 dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center group cursor-pointer overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-purple-600/10"></div>
-              <div className="relative z-10 flex flex-col items-center gap-4 text-white">
-                <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-200 border border-white/20">
-                  <Play className="w-6 h-6 ml-0.5" />
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-semibold mb-1">Product Demo</p>
-                  <p className="text-sm opacity-75">
-                    2:30 • Complete workflow walkthrough
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+ 
+              <DemoVideoPlayer/>
+          
         </div>
       </div>
 
