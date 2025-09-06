@@ -210,9 +210,9 @@ const OrganizationPageForTeamMember = async ({
                   </p>
                 </div>
               )}
-              {pullRequestData?.length > 5 && (
+              {/* {pullRequestData?.length > 5 && (
                 <Button variant="outline">View More</Button>
-              )}
+              )} */}
             </div>
           </div>
         </div>
