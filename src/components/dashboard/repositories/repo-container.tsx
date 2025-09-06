@@ -74,21 +74,29 @@ const RepoContainer = ({ repos }: Props) => {
       {repos?.map((repo) => (
         <div
           key={repo?.full_name}
-          className="flex justify-between p-2 hover:shadow-xl hover:shadow-gray-500! hover:bg-sidebar transition-all duration-200 rounded-md"
+          className="grid grid-cols-[1fr_110px] gap-2 items-center p-2 hover:shadow-xl hover:shadow-gray-500! hover:bg-sidebar transition-all duration-200 rounded-md w-full"
         >
+          {/* Left side - Repository info (takes remaining space) */}
           <Link
             href={`https://www.github.com/${repo?.full_name}`}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 min-w-0 overflow-hidden"
             target="_blank"
           >
-            <GitCompareArrowsIcon /> {repo?.full_name}{" "}
-            {repo?.private && <LockIcon />}
+            <GitCompareArrowsIcon className="flex-shrink-0" />
+            <span className="truncate text-sm" title={repo?.full_name}>
+              {repo?.full_name}
+            </span>
+            {repo?.private && <LockIcon className="flex-shrink-0 ml-1" />}
           </Link>
 
+          {/* Right side - Button (fixed 110px width) */}
           {isConnectedRepo(repo) ? (
             <Button
-              className="bg-green-500!"
-              onClick={() => {
+              variant="outline"
+              size="sm"
+              className="!bg-green-500 text-white hover:!bg-green-600 w-full justify-self-end"
+              onClick={(e) => {
+                e.preventDefault();
                 const toastId = toast.loading("Disconnecting Repo");
                 setToastId(toastId);
                 disconnectRepo.mutateAsync({
@@ -104,8 +112,11 @@ const RepoContainer = ({ repos }: Props) => {
             </Button>
           ) : (
             <Button
-              className="bg-red-500!"
-              onClick={() => {
+              variant="outline"
+              size="sm"
+              className="bg-red-500 text-white hover:bg-red-600 w-full justify-self-end"
+              onClick={(e) => {
+                e.preventDefault();
                 const toastId = toast.loading("Connecting Repo");
                 setToastId(toastId);
                 connectRepo.mutateAsync({
