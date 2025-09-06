@@ -203,7 +203,7 @@ export const DashboardPage = async () => {
             ))}
           </div>
           {/* Usage | Pull requests */}
-          <div className="flex gap-2">
+          <div className="flex flex-col xl:flex-row  gap-2">
             <div className="flex-1">
               <GitroasterUsage chartData={chartData} />
             </div>
