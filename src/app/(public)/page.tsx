@@ -145,9 +145,7 @@ const faqs = [
   },
 ];
 
-
 const LandingPage = () => {
-
   return (
     <div
       className="flex-1 flex flex-col items-center w-[100%] max-w-[100%] relative overflow-x-hidden bg-background"
@@ -461,7 +459,7 @@ const LandingPage = () => {
               {"Still have questions? We're here to help."}
             </p>
             <Button variant="outline" className="rounded-full">
-              Contact Support
+              <a href="mailto:team@gitroaster.space">Contact Support</a>
             </Button>
           </div>
         </div>
@@ -470,7 +468,8 @@ const LandingPage = () => {
       <footer className="relative w-full text-center py-8 text-gray-500 dark:text-gray-400 text-sm bg-background">
         <div className="relative max-w-6xl mx-auto px-4">
           <p>
-            &copy; {new Date().getFullYear()} {"GitRoaster • Built by developers, for developers"}
+            &copy; {new Date().getFullYear()}{" "}
+            {"GitRoaster • Built by developers, for developers"}
           </p>
         </div>
       </footer>
