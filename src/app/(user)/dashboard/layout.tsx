@@ -13,7 +13,7 @@ export async function DashboardSidebarServer() {
   const plans = await caller.razorPayRouter.getPublicPlans();
 
   return (
-    // <Suspense fallback={<></>}>
+  
     <DashboardSidebar
       plans={plans}
       session={session}

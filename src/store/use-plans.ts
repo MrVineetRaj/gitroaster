@@ -1,6 +1,9 @@
 import { Plan } from "@/generated/prisma";
 import { create } from "zustand";
 
+/**
+ * Interface for storing active user's plan data in zustand
+ */
 type PlanState = {
   plans: Plan[];
   isPlansLoaded: boolean;
@@ -8,6 +11,9 @@ type PlanState = {
   getPlans: (period: string) => Plan[];
 };
 
+/**
+ * Zustand store for active user's plan
+ */
 const usePlanStore = create<PlanState>((set, get) => ({
   isPlansLoaded: false,
   plans: [],
