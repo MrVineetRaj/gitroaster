@@ -1,13 +1,15 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { db } from "@/lib/prisma";
-// import { ReviewStatus } from "@/generated/prisma";
+
 import { TRPCError } from "@trpc/server";
 
-import { InvitationStatus, UserAsMemberAndOrg } from "@/generated/prisma";
-// import { razorpayInstance } from "../razorpay/utils";
-
 export const feedbackRouter = createTRPCRouter({
+  /**
+   * This endpoint is responsible to collect user interests if they want billing
+   *
+   * @param message string
+   */
   showBillingInterests: protectedProcedure
     .input(
       z.object({
@@ -44,6 +46,10 @@ export const feedbackRouter = createTRPCRouter({
         });
       }
     }),
+
+  /**
+   * This endpoint is responsible to check if a user already showed interest for billing
+   */
   getInterest: protectedProcedure.query(async ({ ctx }) => {
     const interest = await db.billingInterest.findUnique({
       where: {
@@ -51,6 +57,10 @@ export const feedbackRouter = createTRPCRouter({
       },
     });
 
-    return { message: "Already showed interest", data: interest, success: true };
+    return {
+      message: "Already showed interest",
+      data: interest,
+      success: true,
+    };
   }),
 });

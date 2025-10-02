@@ -20,6 +20,10 @@ const t = initTRPC.context<Context>().create({
   transformer: superjson,
 });
 
+
+/**
+ * Middleware for authenticating a user using next auth
+ */
 const isAuthed = t.middleware(({ next, ctx }) => {
   if (!ctx.auth?.githubUsername) {
     throw new TRPCError({
@@ -34,6 +38,11 @@ const isAuthed = t.middleware(({ next, ctx }) => {
     },
   });
 });
+
+/**
+ * Middleware for authenticating admin
+ * It also passes the user details to the endpoints
+ */
 const isAdmin = t.middleware(async ({ next, ctx }) => {
   if (!ctx.auth?.githubUsername) {
     throw new TRPCError({
@@ -63,6 +72,10 @@ const isAdmin = t.middleware(async ({ next, ctx }) => {
   });
 });
 
+
+/**
+ * This middleware is responsible for checking if a user is part of the given organization
+ */
 const isOrgTeamMember = t.middleware(async ({ next, ctx, getRawInput }) => {
   // orgname can be in input (for queries/mutations)
   const input = await getRawInput();
@@ -116,34 +129,6 @@ export const orgTeamMemberProcedure = t.procedure
   .use(isAuthed)
   .use(isOrgTeamMember);
 
-// const isAdmin = t.middleware(async ({ next, ctx }) => {
-//   if (!ctx.auth?.githubUsername) {
-//     throw new TRPCError({
-//       code: "UNAUTHORIZED",
-//       message: "Not Authenticated",
-//     });
-//   }
-
-//   const user = await db.user.findUnique({
-//     where: {
-//       username: ctx.auth?.githubUsername,
-//     },
-//   });
-
-//   if (user?.role !== UserRole.ADMIN) {
-//     throw new TRPCError({
-//       code: "UNAUTHORIZED",
-//       message: "Not an ADMIN",
-//     });
-//   }
-
-//   return next({
-//     ctx: {
-//       auth: ctx.auth,
-//       dbUser: user,
-//     },
-//   });
-// });
 
 // Base router and procedure helpers
 export const createTRPCRouter = t.router;
