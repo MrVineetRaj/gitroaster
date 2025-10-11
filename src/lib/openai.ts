@@ -5,7 +5,6 @@ import o200k_base from "js-tiktoken/ranks/o200k_base";
 
 const encoding = new Tiktoken(o200k_base);
 
-
 export class OpenAIClient {
   client: OpenAI;
 
@@ -20,9 +19,13 @@ export class OpenAIClient {
     return token_count;
   }
 
-  async chatgptModelPaid(system: string, userInput: string) {
+  async chatgptModelPaid(
+    system: string,
+    userInput: string,
+    modelName: string = "gpt-4.1"
+  ) {
     const response = await this.client.chat.completions.create({
-      model: "gpt-4.1",
+      model: modelName,
       messages: [
         { role: "system", content: system },
         { role: "user", content: userInput },
