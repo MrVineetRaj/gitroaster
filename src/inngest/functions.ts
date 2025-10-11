@@ -258,85 +258,6 @@ export const reviewGenerator = inngest.createFunction(
 
     if (tokenCount < 101000) {
       await step.run("AI review for paid users ", async () => {
-        if (tokenCount < 29500) {
-          const res = await openAiClient.chatgptModelPaid(
-            SYSTEM_PROMPT.header,
-            fileContent
-          );
-          if (res) {
-            const aiResp = JSON.parse(res);
-
-            try {
-              await octokit.issues.createComment({
-                owner: owner,
-                repo: repo,
-                issue_number: pull_number,
-                body: aiResp.overall_review,
-              });
-            } catch (error) {
-              // console.log(error);
-            }
-
-            try {
-              await octokit.pulls.createReview({
-                owner: owner,
-                repo: repo,
-                pull_number: pull_number,
-                event: "COMMENT",
-                body: aiResp.critical_review.description,
-                comments: aiResp.critical_review.review,
-              });
-            } catch (error) {
-              // console.log(error);
-            }
-
-            try {
-              const summaryResponse = await openAiClient.chatgptModelFree(
-                SYSTEM_PROMPT.summary.header,
-                aiResp.overall_review
-              );
-              if (summaryResponse) {
-                const parsedSummary = JSON.parse(summaryResponse);
-                // console.log(parsedSummary);
-                await octokit.pulls.update({
-                  owner: owner,
-                  repo: repo,
-                  pull_number: pull_number,
-
-                  body: parsedSummary.summary,
-                });
-              }
-            } catch (error) {
-              // console.log(error);
-            }
-
-            await db.pullRequest.upsert({
-              where: {
-                repoFullName_pullNumber: {
-                  repoFullName: `${owner!}/${repo!}`,
-                  pullNumber: +pull_number!,
-                },
-              },
-              update: {
-                timeTakenToReview: currTime ? Date.now() - currTime : 60000,
-                charCount: fileContent.length,
-                tokenCount: tokenCount,
-                status: PullRequestStatus.SUCCESS,
-              },
-              create: {
-                ownerUsername,
-                orgname: owner,
-                repoFullName: `${owner!}/${repo!}`,
-                pullNumber: +pull_number!,
-                timeTakenToReview: currTime ? Date.now() - currTime : 60000,
-                author,
-                charCount: fileContent.length,
-                tokenCount: tokenCount,
-                status: PullRequestStatus.SUCCESS,
-              },
-            });
-          }
-        } else {
           const res = await openAiClient.chatgptModelPaid(
             SYSTEM_PROMPT.header,
             fileContent,
@@ -415,7 +336,7 @@ export const reviewGenerator = inngest.createFunction(
               },
             });
           }
-        }
+        
       });
     } else {
       await step.run(
