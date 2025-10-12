@@ -59,6 +59,7 @@
     "input-otp": "^1.4.2",
     "jest-environment-jsdom": "^30.1.2",
     "js-tiktoken": "^1.0.20",
+    "json5": "^2.2.3",
     "label": "^0.2.2",
     "lucide-react": "^0.528.0",
     "next": "15.4.4",
