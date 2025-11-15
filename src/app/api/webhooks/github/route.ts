@@ -34,7 +34,6 @@ export const POST = async (req: NextRequest) => {
     let diff_url: string = "";
     let repositoryName: string = "";
     let payLoadEventType = "";
-    let payloadParsedResult: any;
     while (retryCnt < 10 && !isBodyParsed) {
       retryCnt++;
       const payloadParsedResponse =
@@ -53,9 +52,10 @@ export const POST = async (req: NextRequest) => {
       }
       isBodyParsed = true;
 
-      payloadParsedResult = payloadParsedResponse.data;
+      const payloadParsedResult = payloadParsedResponse.data;
       // console.log(payloadParsedResult);
       payLoadEventType = payloadParsedResult.action;
+      console.log(JSON.stringify(payloadParsedResponse))
 
       // if (payloadParsedResult.action !== "opened") {
       //   return NextResponse.json({
@@ -233,7 +233,6 @@ export const POST = async (req: NextRequest) => {
     }
 
     console.log(payLoadEventType);
-    console.log(JSON.stringify(payloadParsedResult));
     if (payLoadEventType == "opened") {
       await db.pullRequest.create({
         data: {
