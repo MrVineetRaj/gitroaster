@@ -75,6 +75,9 @@ export const POST = async (req: NextRequest) => {
       owner = payloadParsedResult?.repository?.owner?.login;
       author = payloadParsedResult?.sender.login;
       repo = payloadParsedResult?.repository?.name;
+      pull_number =
+        payloadParsedResult?.issue?.number ||
+        payloadParsedResult?.pull_request?.number;
       // console.log(payloadParsedResult);
 
       console.log(JSON.stringify(payloadParsedResponse));
@@ -308,6 +311,7 @@ export const POST = async (req: NextRequest) => {
     // new comment added
     if (payLoadEventType == "created") {
       // comment.body
+
       if (
         commentBody.includes("@gitroaster") &&
         !author.includes("gitroaster[bot]")
