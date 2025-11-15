@@ -185,6 +185,40 @@ export const POST = async (req: NextRequest) => {
     if (!isRepoEnabled) {
       return NextResponse.json({ message: "Repo isn't enabled for AI review" });
     }
+    // console.log("subscription :", subscription);
+
+    const orgDataFromDb = await db.orgRepo.findUnique({
+      where: {
+        orgname: owner!,
+        repoFullName: `${owner!}/${repo!}`,
+      },
+    });
+
+    // new comment added
+    if (payLoadEventType == "created") {
+      // comment.body
+
+      if (
+        commentBody.includes("@gitroaster") &&
+        !author.includes("gitroaster[bot]")
+      ) {
+        await inngest.send({
+          name: "app/ai-chatbot",
+          data: {
+            payload: {
+              installation_id: installation_id,
+              owner,
+              repo,
+              pull_number,
+              author,
+              isFreeUser: true,
+              ownerUsername: orgDataFromDb?.ownerUsername!,
+              currTime: Date.now(),
+            },
+          },
+        });
+      }
+    }
 
     // console.log("author :", author);
 
@@ -223,15 +257,6 @@ export const POST = async (req: NextRequest) => {
       },
       include: {
         plan: true,
-      },
-    });
-
-    // console.log("subscription :", subscription);
-
-    const orgDataFromDb = await db.orgRepo.findUnique({
-      where: {
-        orgname: owner!,
-        repoFullName: `${owner!}/${repo!}`,
       },
     });
 
@@ -306,32 +331,6 @@ export const POST = async (req: NextRequest) => {
 
     // new commit added
     if (payLoadEventType == "synchronize") {
-    }
-
-    // new comment added
-    if (payLoadEventType == "created") {
-      // comment.body
-
-      if (
-        commentBody.includes("@gitroaster") &&
-        !author.includes("gitroaster[bot]")
-      ) {
-        await inngest.send({
-          name: "app/ai-chatbot",
-          data: {
-            payload: {
-              installation_id: installation_id,
-              owner,
-              repo,
-              pull_number,
-              author,
-              isFreeUser: !isPaidUser,
-              ownerUsername: orgDataFromDb?.ownerUsername!,
-              currTime: Date.now(),
-            },
-          },
-        });
-      }
     }
 
     return NextResponse.json({ message: "Webhook processed successfully" });
