@@ -59,7 +59,6 @@ export const POST = async (req: NextRequest) => {
 
       const payloadParsedResult = payloadParsedResponse.data;
       payLoadEventType = payloadParsedResult.action;
-
       if (!VALID_ACTIONS.includes(payLoadEventType)) {
         return NextResponse.json({
           message: `Action ${payLoadEventType} is not supported`,
@@ -77,9 +76,9 @@ export const POST = async (req: NextRequest) => {
       //     message: "Webhook processed successfully but was not a pull_req_open",
       //   });
       // }
-      installation_id = payloadParsedResult.installation.id;
-      diff_url = payloadParsedResult.pull_request.diff_url;
-      repositoryName = payloadParsedResult.repository.full_name;
+      installation_id = payloadParsedResult?.installation.id || "";
+      diff_url = payloadParsedResult?.pull_request?.diff_url || "";
+      repositoryName = payloadParsedResult?.repository?.full_name || "";
     }
 
     if (!installation_id) {
