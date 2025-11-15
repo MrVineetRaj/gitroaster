@@ -5,11 +5,12 @@ import o200k_base from "js-tiktoken/ranks/o200k_base";
 
 const encoding = new Tiktoken(o200k_base);
 
+export const client = new OpenAI();
 export class OpenAIClient {
   client: OpenAI;
 
-  constructor() {
-    this.client = new OpenAI();
+  constructor(client: OpenAI) {
+    this.client = client;
   }
 
   countToken(text_to_count: string) {
@@ -31,6 +32,22 @@ export class OpenAIClient {
         { role: "user", content: userInput },
       ],
       response_format: { type: "json_object" },
+    });
+    return response.choices[0].message.content;
+  }
+  async chatgptModelForChatbot(
+    system: string,
+    userInput: string,
+    developerInput: string,
+    modelName: string = "gpt-4.1"
+  ) {
+    const response = await this.client.chat.completions.create({
+      model: modelName,
+      messages: [
+        { role: "system", content: system },
+        { role: "developer", content: developerInput },
+        { role: "user", content: userInput },
+      ],
     });
     return response.choices[0].message.content;
   }
