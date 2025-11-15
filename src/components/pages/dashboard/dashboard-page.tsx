@@ -45,6 +45,35 @@ export const DashboardPage = async () => {
       orgname: user?.defaultOrg || "",
     });
 
+    const {
+      repos,
+      installationIdFromGithub,
+      success: isGitroasterAppDownloaded,
+    } = await githubOctokit.getEnabledRepoForGitRoaster(
+      user?.username,
+      user?.defaultOrg,
+      installationId || "00000"
+    );
+
+    const connectedRepo = await caller.githubRouter.getAllConnectedRepo({
+      orgname: user?.defaultOrg || "",
+    });
+
+    const repoCount = repos?.length ?? 0;
+    let connectedRepoCount = 0;
+    const isAnyRepoConnected = connectedRepo.some((item) => item.isConnected);
+
+    if (isAnyRepoConnected) {
+      for (const repo of repos) {
+        for (const connected of connectedRepo) {
+          if (repo.full_name === connected.repoFullName) {
+            connectedRepoCount += 1;
+            break;
+          }
+        }
+      }
+    }
+
     const QUICK_CARD_CONTENT: {
       title: string;
       link?: string;
@@ -85,30 +114,26 @@ export const DashboardPage = async () => {
       {
         title: "Connected Repos",
         icon: GitBranchIcon,
-        stat: quickCardData.repoConnected || 0,
+        stat: connectedRepoCount || 0,
         statDesc: "Active repositories",
       },
     ];
 
-    const { repos, installationIdFromGithub } =
-      await githubOctokit.getEnabledRepoForGitRoaster(
-        user?.username,
-        user?.defaultOrg,
-        installationId || "00000"
-      );
-
-    const repoCount = repos?.length ?? 0;
-
     const appManagementURL =
       user.username === user.defaultOrg
-        ? `https://github.com/settings/installations/${installationId}`
-        : `https://github.com/organizations/${user.defaultOrg}/settings/installations/${installationId}`;
+        ? `https://github.com/settings/installations/${
+            installationId || "00000"
+          }`
+        : `https://github.com/organizations/${
+            user.defaultOrg
+          }/settings/installations/${installationId || "00000"}`;
+
     const appInstallationURL = `https://github.com/apps/gitroaster`;
 
     return (
       <div className="flex flex-col min-h-screen bg-background">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-card border-b">
+        <div className="sticky top-0 z-10 bg-card border-b h-18">
           <div className="flex items-center justify-between p-2">
             <div className="space-y-1">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-3">
@@ -178,15 +203,17 @@ export const DashboardPage = async () => {
             ))}
           </div>
           {/* Usage | Pull requests */}
-          <div className="flex gap-2">
+          <div className="flex flex-col xl:flex-row  gap-2">
             <div className="flex-1">
               <GitroasterUsage chartData={chartData} />
             </div>
             <div className="flex-1 flex flex-col gap-2">
-              {pullRequestData?.length > 0 ? (
+              {isGitroasterAppDownloaded && pullRequestData?.length > 0 ? (
                 pullRequestData.slice(0, 5)?.map((item) => (
                   <div
-                    className={"rounded-none p-4  border bg-card hover:bg-primary/20"}
+                    className={
+                      "rounded-none p-4  border bg-card hover:bg-primary/20"
+                    }
                     key={item.id}
                   >
                     <span className="flex items-center justify-between">
@@ -242,44 +269,50 @@ export const DashboardPage = async () => {
                   </p>
                   <Button asChild variant="outline">
                     <Link
-                      href={
-                        repoCount > 0
-                          ? `/dashboard/repositories`
-                          : appInstallationURL
-                      }
-                      target={repoCount > 0 ? "_self" : "_blank"}
+                      href={`/dashboard/repositories`}
                       className="flex gap-2 items-center"
                     >
-                      {repoCount
-                        ? "View Connected Repositories"
-                        : "Connect Repositories"}
+                      {"Manage connected Repositories"}
+
                       <ExternalLinkIcon className="w-3 h-3" />
                     </Link>
                   </Button>
                 </div>
               )}
-              {pullRequestData?.length > 5 && (
+              {/* {pullRequestData?.length > 5 && (
                 <Button variant="outline">View More</Button>
-              )}
+              )} */}
             </div>
           </div>
         </div>
       </div>
     );
   } catch (error) {
-    // window.location.reload();
     return <div>Error loading dashboard. Please try again later.</div>;
   }
 };
 
 export const DashboardPageLoader = () => {
   return (
-    <div>
-      <div className="px-4 py-2 bg-card border-b flex flex-col gap-2">
-        <Skeleton className="w-64 h-8" />
-        <Skeleton className="w-128 h-2" />
-      </div>{" "}
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Header Skeleton */}
+      <div className="sticky top-0 z-10 bg-card border-b h-18">
+        <div className="flex items-center justify-between p-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-32 hidden sm:block" />
+          </div>
+        </div>
+      </div>
+
       <div className="p-4 space-y-4">
+        {/* Privacy Notice */}
         <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
           <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
             <ShieldCheckIcon className="w-5 h-5" />
@@ -292,7 +325,78 @@ export const DashboardPageLoader = () => {
             comments only.
           </p>
         </div>
-        pull_request
+
+        {/* Quick Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <Card className="relative overflow-hidden rounded-none" key={idx}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-32" />
+                <div className="absolute z-10 top-0 right-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Usage Chart and Pull Requests Skeleton */}
+        <div className="flex gap-2">
+          {/* Usage Chart Skeleton */}
+          <div className="flex-1">
+            <Card className="rounded-none">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Skeleton className="h-5 w-32 mb-1" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] flex items-end justify-between gap-2 px-4">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className={`w-8 bg-blue-200 dark:bg-blue-800`}
+                      style={{
+                        height: `${Math.random() * 200 + 50}px`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Pull Requests Skeleton */}
+          <div className="flex-1 flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <div className="rounded-none p-4 border bg-card" key={idx}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-6 w-12" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

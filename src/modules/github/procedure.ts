@@ -1,11 +1,16 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { db } from "@/lib/prisma";
-// import { ReviewStatus } from "@/generated/prisma";
+
 import { TRPCError } from "@trpc/server";
-// import { razorpayInstance } from "../razorpay/utils";
+
 
 export const githubRouter = createTRPCRouter({
+  /**
+   * This endpoint is responsible to fetch connected repo details stored in database
+   *
+   * @param orgname orgname or username
+   */
   getAllConnectedRepo: protectedProcedure
     .input(
       z.object({
@@ -21,6 +26,12 @@ export const githubRouter = createTRPCRouter({
 
       return connectedRepo || [];
     }),
+  /**
+   * This endpoint is responsible to disable a repo for pull request reviews
+   *
+   * @param orgname orgname or username
+   * @param repoFullName full repo name in format  - <orgname>/<repo_name>
+   */
   disconnectRepo: protectedProcedure
     .input(
       z.object({
@@ -47,6 +58,13 @@ export const githubRouter = createTRPCRouter({
         });
       }
     }),
+
+  /**
+   * This endpoint is responsible to enable a repo for pull request reviews
+   *
+   * @param orgname orgname or username
+   * @param repoFullName full repo name in format  - <orgname>/<repo_name>
+   */
   connectRepo: protectedProcedure
     .input(
       z.object({
@@ -56,11 +74,6 @@ export const githubRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { orgname, repoFullName }, ctx }) => {
       try {
-        // const connectedRepos = await db.orgRepo.findMany({
-        //   where: { orgname, repoFullName, isConnected: true },
-        // });
-
-        //  subscription based logic
 
         await db.orgRepo.upsert({
           where: {

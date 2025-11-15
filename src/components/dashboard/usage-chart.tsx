@@ -136,9 +136,9 @@ export function GitroasterUsage({
           </ChartContainer>
         </CardContent>
       </Card>
-      <Button variant="outline" className="mt-2 px-0 w-full">
+      {/* <Button variant="outline" className="mt-2 px-0 w-full">
         Full view
-      </Button>
+      </Button> */}
     </>
   );
 }

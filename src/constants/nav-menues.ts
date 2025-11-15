@@ -45,12 +45,12 @@ export const PROFILE_MENU = [
 ];
 
 export const ADMIN_MENU = [
-  {
-    title: "Analytics",
-    href: "/dashboard/admin/analytics",
-    icon: ChartPieIcon,
-    badge: null,
-  },
+  // {
+  //   title: "Analytics",
+  //   href: "/dashboard/admin/analytics",
+  //   icon: ChartPieIcon,
+  //   badge: null,
+  // },
   {
     title: "Plan and Subscription",
     href: "/dashboard/admin/plans-and-subscription",

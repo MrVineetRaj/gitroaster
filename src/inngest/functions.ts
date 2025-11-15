@@ -7,6 +7,7 @@ import { SYSTEM_PROMPT } from "@/constants/prompts";
 import { db } from "@/lib/prisma";
 import { envKeys } from "inngest/helpers/consts";
 import { PullRequestStatus } from "@/generated/prisma";
+import { parseJson } from "@/lib/utils";
 const excludedExtensions = [
   // images
   ".png",
@@ -256,24 +257,31 @@ export const reviewGenerator = inngest.createFunction(
       return { char: fileContent.length, token: tokenCount };
     }
 
-    if (tokenCount < 51000) {
+    if (tokenCount < 101000) {
+      console.log(tokenCount);
       await step.run("AI review for paid users ", async () => {
-        const res = await openAiClient.chatgptModelPaid(
+        const result = await openAiClient.chatgptModelPaid(
           SYSTEM_PROMPT.header,
-          fileContent
+          fileContent,
+          tokenCount <= 29000 ? "gpt-4.1" : "gpt-4.1-mini"
         );
+
+        const res = parseJson(result);
+        console.log(res);
         if (res) {
           const aiResp = JSON.parse(res);
+          console.log(aiResp);
+          // return fileContent;
 
           try {
             await octokit.issues.createComment({
               owner: owner,
               repo: repo,
               issue_number: pull_number,
-              body: aiResp.overall_review,
+              body: aiResp?.overall_review,
             });
           } catch (error) {
-            // console.log(error);
+            console.log(error);
           }
 
           try {
@@ -282,18 +290,21 @@ export const reviewGenerator = inngest.createFunction(
               repo: repo,
               pull_number: pull_number,
               event: "COMMENT",
-              body: aiResp.critical_review.description,
-              comments: aiResp.critical_review.review,
+              body: aiResp?.critical_review.description,
+              comments: aiResp?.critical_review.review,
             });
           } catch (error) {
-            // console.log(error);
+            console.log(error);
           }
 
+          let prTitle = "";
           try {
-            const summaryResponse = await openAiClient.chatgptModelFree(
+            const summaryResult = await openAiClient.chatgptModelFree(
               SYSTEM_PROMPT.summary.header,
               aiResp.overall_review
             );
+
+            const summaryResponse = parseJson(summaryResult);
             if (summaryResponse) {
               const parsedSummary = JSON.parse(summaryResponse);
               // console.log(parsedSummary);
@@ -302,11 +313,14 @@ export const reviewGenerator = inngest.createFunction(
                 repo: repo,
                 pull_number: pull_number,
 
-                body: parsedSummary.summary,
+                body: parsedSummary?.summary,
+                title: parsedSummary?.title,
               });
+
+              prTitle = parsedSummary?.title;
             }
           } catch (error) {
-            // console.log(error);
+            console.log(error);
           }
 
           await db.pullRequest.upsert({
@@ -317,12 +331,14 @@ export const reviewGenerator = inngest.createFunction(
               },
             },
             update: {
+              title: prTitle,
               timeTakenToReview: currTime ? Date.now() - currTime : 60000,
               charCount: fileContent.length,
               tokenCount: tokenCount,
               status: PullRequestStatus.SUCCESS,
             },
             create: {
+              title: prTitle,
               ownerUsername,
               orgname: owner,
               repoFullName: `${owner!}/${repo!}`,
@@ -341,10 +357,12 @@ export const reviewGenerator = inngest.createFunction(
         "Summary for paid users for large pull request",
         async () => {
           try {
-            const res = await openAiClient.chatgptModelFree(
+            const result = await openAiClient.chatgptModelFree(
               SYSTEM_PROMPT.largePullRequests,
               JSON.stringify(filenames)
             );
+
+            const res = parseJson(result);
             if (res) {
               const aiResp = JSON.parse(res);
               await octokit.pulls.update({
@@ -389,4 +407,10 @@ export const reviewGenerator = inngest.createFunction(
 
     return { char: fileContent.length, token: tokenCount };
   }
+);
+
+export const aiChatBotForComments = inngest.createFunction(
+  { id: "review-generator" },
+  { event: "app/review-generator" },
+  async ({ event, step }) => {}
 );

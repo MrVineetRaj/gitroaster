@@ -28,12 +28,15 @@ export const RepositoriesPage = async () => {
 
     // console.log("installationId");
 
-    const { repos, installationIdFromGithub } =
-      await githubOctokit.getEnabledRepoForGitRoaster(
-        user?.username,
-        user?.defaultOrg,
-        installationId || "00000"
-      );
+    const {
+      repos,
+      installationIdFromGithub,
+      success: isGitroasterAppDownloaded,
+    } = await githubOctokit.getEnabledRepoForGitRoaster(
+      user?.username,
+      user?.defaultOrg,
+      installationId || "00000"
+    );
 
     // if (installationId !== installationIdFromGithub) {
     //   console.log(
@@ -48,8 +51,12 @@ export const RepositoriesPage = async () => {
 
     const appManagementURL =
       user.username === user.defaultOrg
-        ? `https://github.com/settings/installations/${installationId}`
-        : `https://github.com/organizations/${user.defaultOrg}/settings/installations/${installationId}`;
+        ? `https://github.com/settings/installations/${
+            installationId || "00000"
+          }`
+        : `https://github.com/organizations/${
+            user.defaultOrg
+          }/settings/installations/${installationId || "00000"}`;
     const appInstallationURL = `https://github.com/apps/gitroaster`;
 
     return (
@@ -69,7 +76,7 @@ export const RepositoriesPage = async () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {installationIdFromGithub && (
+              {isGitroasterAppDownloaded && installationIdFromGithub && (
                 <>
                   <Button asChild variant="outline" className="hidden sm:flex">
                     <Link
@@ -110,7 +117,7 @@ export const RepositoriesPage = async () => {
                   <CardTitle className="flex items-center gap-2">
                     <GitBranchIcon className="w-5 h-5 text-blue-500" />
                     Repository List
-                    {repoCount > 0 && (
+                    {isGitroasterAppDownloaded && repoCount > 0 && (
                       <Badge variant="secondary" className="ml-2">
                         {repoCount}
                       </Badge>
@@ -234,18 +241,31 @@ export const RepositoriesPage = async () => {
     );
   } catch (error) {
     // window.location.reload();
-    return null;
+    return "Something went wrong on repo page, please try again later.";
   }
 };
 
 export const RepositoriesPageLoader = () => {
   return (
-    <div>
-      <div className="px-4 py-2 bg-card border-b flex flex-col gap-2">
-        <Skeleton className="w-64 h-8" />
-        <Skeleton className="w-128 h-2" />
-      </div>{" "}
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Header Skeleton */}
+      <div className="sticky top-0 z-10 bg-card border-b">
+        <div className="flex items-center justify-between p-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-40 hidden sm:block" />
+          </div>
+        </div>
+      </div>
+
       <div className="p-4 space-y-4">
+        {/* Privacy Notice - Keep actual content since it's static */}
         <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
           <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
             <ShieldCheckIcon className="w-5 h-5" />
@@ -257,6 +277,95 @@ export const RepositoriesPageLoader = () => {
             content, vulnerabilities, and suggestions remain in GitHub PR
             comments only.
           </p>
+        </div>
+
+        {/* Repository List Section Skeleton */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <GitBranchIcon className="w-5 h-5 text-blue-500" />
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-5 w-8" />
+                </div>
+                <Skeleton className="h-4 w-64" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {/* Repository Items Skeleton */}
+            <div className="divide-y">
+              {Array.from({ length: 5 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-5 w-48" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Help Section Skeleton */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircleIcon className="w-5 h-5 text-orange-500" />
+              <Skeleton className="h-6 w-48" />
+            </div>
+            <Skeleton className="h-4 w-56" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                    {idx + 1}
+                  </div>
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-4 w-64" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Additional Repository Stats Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <Card key={idx}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8" />
+                  <div className="space-y-1 flex-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-16" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </div>

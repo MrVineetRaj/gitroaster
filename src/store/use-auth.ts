@@ -1,5 +1,8 @@
 import { create } from "zustand";
 
+/**
+ * Interface for storing user data in zustand
+ */
 type AuthState = {
   username: string;
   defaultOrg: string;
@@ -16,6 +19,9 @@ type AuthState = {
   setSubscription: (subscription: { planId: string; status: string }) => void;
 };
 
+/**
+ * Zustand store for active user
+ */
 const useAuthStore = create<AuthState>((set) => ({
   username: "",
   userRole: "",

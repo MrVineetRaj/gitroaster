@@ -77,7 +77,7 @@ const PlanCard = ({ plan, isAdminPage, currentPlan }: Props) => {
         // window.open(subscription.short_url, "_blank");
       },
       onError: (err) => {
-        console.log(err);
+        // console.log(err);
         toast.error(err.message);
       },
     })

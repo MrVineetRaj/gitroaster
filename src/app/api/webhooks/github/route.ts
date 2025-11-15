@@ -33,6 +33,7 @@ export const POST = async (req: NextRequest) => {
     let installation_id: string = "";
     let diff_url: string = "";
     let repositoryName: string = "";
+    let payLoadEventType = "";
     while (retryCnt < 10 && !isBodyParsed) {
       retryCnt++;
       const payloadParsedResponse =
@@ -53,11 +54,14 @@ export const POST = async (req: NextRequest) => {
 
       const payloadParsedResult = payloadParsedResponse.data;
       // console.log(payloadParsedResult);
-      if (payloadParsedResult.action !== "opened") {
-        return NextResponse.json({
-          message: "Webhook processed successfully but was not a pull_req_open",
-        });
-      }
+      payLoadEventType = payloadParsedResult.action;
+      console.log(JSON.stringify(payloadParsedResponse))
+
+      // if (payloadParsedResult.action !== "opened") {
+      //   return NextResponse.json({
+      //     message: "Webhook processed successfully but was not a pull_req_open",
+      //   });
+      // }
       installation_id = payloadParsedResult.installation.id;
       diff_url = payloadParsedResult.pull_request.diff_url;
       repositoryName = payloadParsedResult.repository.full_name;
@@ -70,7 +74,7 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
-    console.log(installation_id);
+    // console.log(installation_id);
 
     // const isPrReviewEnabled = await db.connectedRepo.findUnique({
     //   where: {
@@ -145,6 +149,15 @@ export const POST = async (req: NextRequest) => {
 
     const author = prData.user?.login;
     const title = prData.title;
+    const body = prData.body;
+
+    if (body?.includes("@gitroaster")) {
+      if (body?.includes("@!ignore")) {
+        return NextResponse.json({
+          message: "PR ignored for automated review",
+        });
+      }
+    }
 
     // console.log(author);
     // let isLargePr = false;
@@ -166,7 +179,7 @@ export const POST = async (req: NextRequest) => {
       return NextResponse.json({ message: "Repo isn't enabled for AI review" });
     }
 
-    console.log("author :", author);
+    // console.log("author :", author);
 
     const isAllowed = await db.userAsMemberAndOrg.findUnique({
       where: {
@@ -178,7 +191,7 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
-    console.log("isAllowed :", isAllowed);
+    // console.log("isAllowed :", isAllowed);
     if (!isAllowed) {
       return NextResponse.json({ message: "Author isn't allowed" });
     }
@@ -206,7 +219,7 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
-    console.log("subscription :", subscription);
+    // console.log("subscription :", subscription);
 
     const orgDataFromDb = await db.orgRepo.findUnique({
       where: {
@@ -219,83 +232,98 @@ export const POST = async (req: NextRequest) => {
       return NextResponse.json({ message: "No org data found" });
     }
 
-    await db.pullRequest.create({
-      data: {
-        ownerUsername: orgDataFromDb?.ownerUsername!,
-        repoFullName: `${owner!}/${repo!}`,
-        orgname: owner!,
-        author: author,
-        pullNumber: +pull_number!,
-        timeTakenToReview: 0,
-        title,
-      },
-    });
-
-    const user = await db.user.findUnique({
-      where: {
-        username: orgDataFromDb?.ownerUsername,
-      },
-    });
-
-    let onTrial = false;
-    if (!user) {
-      return NextResponse.json({ message: "No user found" });
-    }
-
-    onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
-
-    if (!subscription || (subscription && subscription?.status !== "active")) {
-      if (onTrial) {
-        await inngest.send({
-          name: "app/review-generator",
-          data: {
-            payload: {
-              installation_id: installation_id,
-              owner,
-              repo,
-              pull_number,
-              author: prData.user?.login,
-              isFreeUser: false,
-              ownerUsername: orgDataFromDb?.ownerUsername!,
-              currTime: Date.now(),
-            },
-          },
-        });
-      } else {
-        await inngest.send({
-          name: "app/review-generator",
-          data: {
-            payload: {
-              installation_id: installation_id,
-              owner,
-              repo,
-              pull_number,
-              author: prData.user?.login,
-              isFreeUser: true,
-              ownerUsername: orgDataFromDb?.ownerUsername!,
-              currTime: Date.now(),
-            },
-          },
-        });
-      }
-      return NextResponse.json({ message: "Webhook processed successfully" });
-    }
-
-    await inngest.send({
-      name: "app/review-generator",
-      data: {
-        payload: {
-          installation_id: installation_id,
-          owner,
-          repo,
-          pull_number,
-          author: prData.user?.login,
-          isFreeUser: false,
+    console.log(payLoadEventType);
+    if (payLoadEventType == "opened") {
+      await db.pullRequest.create({
+        data: {
           ownerUsername: orgDataFromDb?.ownerUsername!,
-          currTime: Date.now(),
+          repoFullName: `${owner!}/${repo!}`,
+          orgname: owner!,
+          author: author,
+          pullNumber: +pull_number!,
+          timeTakenToReview: 0,
+          title,
         },
-      },
-    });
+      });
+
+      const user = await db.user.findUnique({
+        where: {
+          username: orgDataFromDb?.ownerUsername,
+        },
+      });
+
+      let onTrial = false;
+
+      if (!user) {
+        return NextResponse.json({ message: "No user found" });
+      }
+
+      onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
+
+      if (
+        !subscription ||
+        (subscription && subscription?.status !== "active")
+      ) {
+        if (onTrial) {
+          await inngest.send({
+            name: "app/review-generator",
+            data: {
+              payload: {
+                installation_id: installation_id,
+                owner,
+                repo,
+                pull_number,
+                author: prData.user?.login,
+                isFreeUser: false,
+                ownerUsername: orgDataFromDb?.ownerUsername!,
+                currTime: Date.now(),
+              },
+            },
+          });
+        } else {
+          await inngest.send({
+            name: "app/review-generator",
+            data: {
+              payload: {
+                installation_id: installation_id,
+                owner,
+                repo,
+                pull_number,
+                author: prData.user?.login,
+                isFreeUser: true,
+                ownerUsername: orgDataFromDb?.ownerUsername!,
+                currTime: Date.now(),
+              },
+            },
+          });
+        }
+        return NextResponse.json({ message: "Webhook processed successfully" });
+      }
+
+      await inngest.send({
+        name: "app/review-generator",
+        data: {
+          payload: {
+            installation_id: installation_id,
+            owner,
+            repo,
+            pull_number,
+            author: prData.user?.login,
+            isFreeUser: false,
+            ownerUsername: orgDataFromDb?.ownerUsername!,
+            currTime: Date.now(),
+          },
+        },
+      });
+    }
+
+    // new commit added
+    if (payLoadEventType == "synchronize") {
+    }
+
+    // new comment added
+    if (payLoadEventType == "created") {
+    }
 
     return NextResponse.json({ message: "Webhook processed successfully" });
   } catch (error) {

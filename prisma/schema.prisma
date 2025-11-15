@@ -44,163 +44,158 @@ enum PaymentStatus {
 }
 
 model User {
-  username String @id
-  email String @unique
-  defaultOrg String
-  role UserRole @default(USER)
+  username     String   @id
+  email        String   @unique
+  defaultOrg   String
+  role         UserRole @default(USER)
   trialStartAt DateTime @default(now())
-  trialEndAt DateTime 
+  trialEndAt   DateTime
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
-  repos OrgRepo[]
-  memberAt UserAsMemberAndOrg[]
-  pullRequests PullRequest[]
+  repos          OrgRepo[]
+  memberAt       UserAsMemberAndOrg[]
+  pullRequests   PullRequest[]
   installationId InstallationId[]
-  subscriptions Subscription[]
-  payments Payments[]
-  aiTones AiTone[]
+  subscriptions  Subscription[]
+  payments       Payments[]
+  aiTones        AiTone[]
+
+  billingInterest BillingInterest?
+  reportedBugs    ReportedBug[]
 }
 
 model InstallationId {
-  id String @id @default(uuid())
+  id             String @id @default(uuid())
   installationId String
-  ownerUsername String 
-  orgname String 
+  ownerUsername  String
+  orgname        String
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
-  @@unique([orgname,ownerUsername])
+  orgOwner User @relation(fields: [ownerUsername], references: [username], onDelete: Cascade)
 
-  orgOwner User @relation(fields: [ownerUsername],references: [username],onDelete: Cascade)
+  @@unique([orgname, ownerUsername])
 }
 
 model UserAsMemberAndOrg {
-  id String @id @default(uuid())
-  orgname String
-  teamMemberUsername String 
-  isAllowed Boolean
+  id                 String  @id @default(uuid())
+  orgname            String
+  teamMemberUsername String
+  isAllowed          Boolean
+  isPastMember       Boolean @default(false)
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
-  @@unique([orgname,teamMemberUsername])
+  teamMember User @relation(fields: [teamMemberUsername], references: [username], onDelete: Cascade)
 
-  teamMember User @relation(fields: [teamMemberUsername],references: [username],onDelete: Cascade) 
+  @@unique([orgname, teamMemberUsername])
 }
 
 model OrgRepo {
-  repoFullName String @id
-  ownerUsername String 
-  orgname String 
-  isConnected Boolean
+  repoFullName  String  @id
+  ownerUsername String
+  orgname       String
+  isConnected   Boolean
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
-  owner User @relation(fields: [ownerUsername],references: [username],onDelete: Cascade)
+  owner        User          @relation(fields: [ownerUsername], references: [username], onDelete: Cascade)
   pullRequests PullRequest[]
 }
 
 model PullRequest {
-  id String @id @default(uuid())
-  title String? @default("PR title")
-  ownerUsername String 
-  repoFullName String 
-  orgname String 
-  author String 
-  pullNumber Int
-  status PullRequestStatus @default(PENDING)
+  id                String            @id @default(uuid())
+  title             String?           @default("PR title")
+  ownerUsername     String
+  repoFullName      String
+  orgname           String
+  author            String
+  pullNumber        Int
+  status            PullRequestStatus @default(PENDING)
   timeTakenToReview Int
-  charCount Int @default(0)
-  tokenCount Int @default(0)
-  
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  charCount         Int               @default(0)
+  tokenCount        Int               @default(0)
 
-  @@unique([repoFullName,pullNumber])
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  parentRepo     OrgRepo  @relation(fields: [repoFullName], references: [repoFullName], onDelete: Cascade)
+  parentOrgOwner User     @relation(fields: [ownerUsername], references: [username], onDelete: Cascade)
 
-  parentRepo OrgRepo @relation(fields: [repoFullName],references: [repoFullName],onDelete: Cascade)
-  parentOrgOwner User @relation(fields: [ownerUsername],references: [username],onDelete: Cascade)
+  @@unique([repoFullName, pullNumber])
 }
 
 model Plan {
-  planId String @id // id
-  interval Int  // interval
-  period String // period
-  name String // item.name
+  planId      String   @id // id
+  interval    Int // interval
+  period      String // period
+  name        String // item.name
   description String //item.name
-  unitAmount Int //item.amount
-  currency String //item.currency
-  features String[] // notes.features
-
-  isActive Boolean // false
-  isPopular Boolean // false
-
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  unitAmount  Int //item.amount
+  currency    String //item.currency
+  features    String[] // notes.features
+  isActive    Boolean // false
+  isPopular   Boolean // false
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 
   subscriptions Subscription[]
 }
 
 model Subscription {
-  subscriptionId String @id
-  planId String 
-  orgname String 
-  username String 
-  status String  @default("pending")
-  cycleStart DateTime?
-  cycleEnd DateTime?
+  subscriptionId  String    @id
+  planId          String
+  orgname         String    @unique
+  username        String
+  status          String    @default("pending")
+  cycleStart      DateTime?
+  cycleEnd        DateTime?
   upcomingPayment DateTime?
+  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
 
+  plan Plan @relation(fields: [planId], references: [planId], onDelete: Cascade)
+  user User @relation(fields: [username], references: [username], onDelete: Cascade)
 
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
-
-  @@unique([orgname,username])
-
-  plan Plan @relation(fields: [planId],references: [planId],onDelete: Cascade)
-  user User @relation(fields: [username],references: [username],onDelete: Cascade)
+  @@unique([orgname, username])
 }
 
 model Payments {
-  paymentId String @id
-  orgname String 
-  username String 
-  amount Int
-  currency String
-  status String @default("pending")
-  invoiceId String?
-  orderId String 
-  method String
-  paymentDetails Json 
-  email String
-  contact String
+  paymentId      String   @id
+  orgname        String
+  username       String
+  amount         Int
+  currency       String
+  status         String   @default("pending")
+  invoiceId      String?
+  orderId        String
+  method         String
+  paymentDetails Json
+  email          String
+  contact        String
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
 
-
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [username],references: [username],onDelete: Cascade)
+  user User @relation(fields: [username], references: [username], onDelete: Cascade)
 }
 
 model AiTone {
-  id String @id @default(uuid())
-  username String 
-  orgname String
-  isUsed Boolean @default(false)
+  id                  String   @id @default(uuid())
+  username            String
+  orgname             String
+  isUsed              Boolean  @default(false)
   usedForRepoFullName String?
+  title               String
+  userDescription     String
+  extractedTone       String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  title String
-  userDescription String
-  extractedTone String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  owner User @relation(fields: [username],references: [username],onDelete: Cascade)
+  owner User @relation(fields: [username], references: [username], onDelete: Cascade)
 }
 
 enum InvitationStatus {
@@ -209,15 +204,36 @@ enum InvitationStatus {
   rejected
 }
 
-model Invitations{
-  id String @id @default(uuid())
+model Invitations {
+  id             String           @id @default(uuid())
   senderUserName String
-  orgname String
-  username String
-  email String
-  status InvitationStatus @default(pending)
-  isResponded Boolean
+  orgname        String
+  username       String
+  email          String
+  status         InvitationStatus @default(pending)
+  isResponded    Boolean
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
 
+model BillingInterest {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  message   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [username], references: [username], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model ReportedBug {
+  id                  String   @id @default(uuid())
+  username            String   @unique
+  email               String   @unique
+  message             String?
+  steps               String
+  screenshots         String[]
+  screenshotsPublicId String[]
+  user User @relation(fields: [username], references: [username], onDelete: Cascade, onUpdate: Cascade)
 }
