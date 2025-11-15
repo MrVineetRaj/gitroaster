@@ -39,6 +39,11 @@ export const POST = async (req: NextRequest) => {
     let newCommitSha = "";
     let commentBody = "";
 
+    let owner = "";
+    let author = "";
+    let repo = "";
+    let pull_number = 0;
+
     while (retryCnt < 10 && !isBodyParsed) {
       retryCnt++;
       const payloadParsedResponse =
@@ -67,6 +72,9 @@ export const POST = async (req: NextRequest) => {
 
       newCommitSha = payloadParsedResult?.pull_request?.head?.sha || "";
       commentBody = payloadParsedResult?.comment?.body || "";
+      owner = payloadParsedResult?.repository?.owner?.login;
+      author = payloadParsedResult?.sender.login;
+      repo = payloadParsedResult?.repository?.name;
       // console.log(payloadParsedResult);
 
       console.log(JSON.stringify(payloadParsedResponse));
@@ -101,50 +109,50 @@ export const POST = async (req: NextRequest) => {
     //   return NextResponse.json({ message: "Webhook processed successfully" });
     // }
 
-    let prDiffResponse:
-      | {
-          success: boolean;
-          message: string;
-          data: null;
-          owner: null;
-          repo: null;
-          pull_number: null;
-        }
-      | {
-          success: boolean;
-          data: object;
-          message: string;
-          owner: string;
-          repo: string;
-          pull_number: string;
-        } = {
-      success: false,
-      message: "",
-      data: null,
-      owner: null,
-      repo: null,
-      pull_number: null,
-    };
+    // let prDiffResponse:
+    //   | {
+    //       success: boolean;
+    //       message: string;
+    //       data: null;
+    //       owner: null;
+    //       repo: null;
+    //       pull_number: null;
+    //     }
+    //   | {
+    //       success: boolean;
+    //       data: object;
+    //       message: string;
+    //       owner: string;
+    //       repo: string;
+    //       pull_number: string;
+    //     } = {
+    //   success: false,
+    //   message: "",
+    //   data: null,
+    //   owner: null,
+    //   repo: null,
+    //   pull_number: null,
+    // };
 
-    retryCnt = 0;
-    let gotPrDiffResponse = false;
-    while (retryCnt < 10 && !gotPrDiffResponse) {
-      retryCnt++;
-      prDiffResponse = await githubOctokit.differenceData(
-        installation_id,
-        diff_url
-      );
+    // retryCnt = 0;
+    // let gotPrDiffResponse = false;
+    // while (retryCnt < 10 && !gotPrDiffResponse) {
+    //   retryCnt++;
+    //   prDiffResponse = await githubOctokit.differenceData(
+    //     installation_id,
+    //     diff_url
+    //   );
 
-      if (!prDiffResponse.success) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+    //   if (!prDiffResponse.success) {
+    //     await new Promise((resolve) => setTimeout(resolve, 500));
+    //   }
 
-      gotPrDiffResponse = true;
+    //   gotPrDiffResponse = true;
 
-      break;
-    }
+    //   break;
+    // }
 
-    const { owner, repo, pull_number } = prDiffResponse;
+    // const { owner, repo, pull_number } = prDiffResponse;
 
     const octokit = new Octokit({
       authStrategy: createAppAuth,
@@ -155,32 +163,14 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
-    const { data: prData } = await octokit.pulls.get({
-      owner: owner!,
-      repo: repo!,
-      pull_number: +pull_number!,
-    });
-
-    const author = prData.user?.login;
-    const title = prData.title;
-    const body = prData.body;
-
-    if (body?.includes("@gitroaster")) {
-      if (body?.includes("@!ignore")) {
-        return NextResponse.json({
-          message: "PR ignored for automated review",
-        });
-      }
-    }
-
     // console.log(author);
     // let isLargePr = false;
-    if (!prDiffResponse.data) {
-      return NextResponse.json(
-        { message: "INVALID_SECRET_KEY" },
-        { status: 401 }
-      );
-    }
+    // if (!prDiffResponse.data) {
+    //   return NextResponse.json(
+    //     { message: "INVALID_SECRET_KEY" },
+    //     { status: 401 }
+    //   );
+    // }
 
     const isRepoEnabled = await db.orgRepo.findUnique({
       where: {
@@ -264,6 +254,24 @@ export const POST = async (req: NextRequest) => {
       !subscription || (subscription && subscription?.status !== "active");
 
     if (payLoadEventType == "opened") {
+      const { data: prData } = await octokit.pulls.get({
+        owner: owner!,
+        repo: repo!,
+        pull_number: +pull_number!,
+      });
+
+      // const author = prData.user?.login;
+      const title = prData.title;
+      const body = prData.body;
+
+      if (body?.includes("@gitroaster")) {
+        if (body?.includes("@!ignore")) {
+          return NextResponse.json({
+            message: "PR ignored for automated review",
+          });
+        }
+      }
+
       await inngest.send({
         name: "app/review-generator",
         data: {
@@ -312,7 +320,7 @@ export const POST = async (req: NextRequest) => {
               owner,
               repo,
               pull_number,
-              author: prData.user?.login,
+              author,
               isFreeUser: !isPaidUser,
               ownerUsername: orgDataFromDb?.ownerUsername!,
               currTime: Date.now(),
