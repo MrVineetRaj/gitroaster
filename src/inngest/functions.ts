@@ -270,6 +270,8 @@ export const reviewGenerator = inngest.createFunction(
         console.log(res);
         if (res) {
           const aiResp = JSON.parse(res);
+          console.log(aiResp);
+          // return fileContent;
 
           try {
             await octokit.issues.createComment({
@@ -282,19 +284,20 @@ export const reviewGenerator = inngest.createFunction(
             console.log(error);
           }
 
-          // try {
-          //   await octokit.pulls.createReview({
-          //     owner: owner,
-          //     repo: repo,
-          //     pull_number: pull_number,
-          //     event: "COMMENT",
-          //     body: aiResp?.critical_review.description,
-          //     comments: aiResp?.critical_review.review,
-          //   });
-          // } catch (error) {
-          //   console.log(error);
-          // }
+          try {
+            await octokit.pulls.createReview({
+              owner: owner,
+              repo: repo,
+              pull_number: pull_number,
+              event: "COMMENT",
+              body: aiResp?.critical_review.description,
+              comments: aiResp?.critical_review.review,
+            });
+          } catch (error) {
+            console.log(error);
+          }
 
+          let prTitle = "";
           try {
             const summaryResult = await openAiClient.chatgptModelFree(
               SYSTEM_PROMPT.summary.header,
@@ -313,6 +316,8 @@ export const reviewGenerator = inngest.createFunction(
                 body: parsedSummary?.summary,
                 title: parsedSummary?.title,
               });
+
+              prTitle = parsedSummary?.title;
             }
           } catch (error) {
             console.log(error);
@@ -326,12 +331,14 @@ export const reviewGenerator = inngest.createFunction(
               },
             },
             update: {
+              title: prTitle,
               timeTakenToReview: currTime ? Date.now() - currTime : 60000,
               charCount: fileContent.length,
               tokenCount: tokenCount,
               status: PullRequestStatus.SUCCESS,
             },
             create: {
+              title: prTitle,
               ownerUsername,
               orgname: owner,
               repoFullName: `${owner!}/${repo!}`,
@@ -400,4 +407,10 @@ export const reviewGenerator = inngest.createFunction(
 
     return { char: fileContent.length, token: tokenCount };
   }
+);
+
+export const aiChatBotForComments = inngest.createFunction(
+  { id: "review-generator" },
+  { event: "app/review-generator" },
+  async ({ event, step }) => {}
 );

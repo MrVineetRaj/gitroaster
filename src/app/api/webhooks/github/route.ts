@@ -33,6 +33,8 @@ export const POST = async (req: NextRequest) => {
     let installation_id: string = "";
     let diff_url: string = "";
     let repositoryName: string = "";
+    let payLoadEventType = "";
+    let payloadParsedResult: any;
     while (retryCnt < 10 && !isBodyParsed) {
       retryCnt++;
       const payloadParsedResponse =
@@ -51,13 +53,15 @@ export const POST = async (req: NextRequest) => {
       }
       isBodyParsed = true;
 
-      const payloadParsedResult = payloadParsedResponse.data;
+      payloadParsedResult = payloadParsedResponse.data;
       // console.log(payloadParsedResult);
-      if (payloadParsedResult.action !== "opened") {
-        return NextResponse.json({
-          message: "Webhook processed successfully but was not a pull_req_open",
-        });
-      }
+      payLoadEventType = payloadParsedResult.action;
+
+      // if (payloadParsedResult.action !== "opened") {
+      //   return NextResponse.json({
+      //     message: "Webhook processed successfully but was not a pull_req_open",
+      //   });
+      // }
       installation_id = payloadParsedResult.installation.id;
       diff_url = payloadParsedResult.pull_request.diff_url;
       repositoryName = payloadParsedResult.repository.full_name;
@@ -228,84 +232,99 @@ export const POST = async (req: NextRequest) => {
       return NextResponse.json({ message: "No org data found" });
     }
 
-    await db.pullRequest.create({
-      data: {
-        ownerUsername: orgDataFromDb?.ownerUsername!,
-        repoFullName: `${owner!}/${repo!}`,
-        orgname: owner!,
-        author: author,
-        pullNumber: +pull_number!,
-        timeTakenToReview: 0,
-        title,
-      },
-    });
-
-    const user = await db.user.findUnique({
-      where: {
-        username: orgDataFromDb?.ownerUsername,
-      },
-    });
-
-    let onTrial = false;
-
-    if (!user) {
-      return NextResponse.json({ message: "No user found" });
-    }
-
-    onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
-
-    if (!subscription || (subscription && subscription?.status !== "active")) {
-      if (onTrial) {
-        await inngest.send({
-          name: "app/review-generator",
-          data: {
-            payload: {
-              installation_id: installation_id,
-              owner,
-              repo,
-              pull_number,
-              author: prData.user?.login,
-              isFreeUser: false,
-              ownerUsername: orgDataFromDb?.ownerUsername!,
-              currTime: Date.now(),
-            },
-          },
-        });
-      } else {
-        await inngest.send({
-          name: "app/review-generator",
-          data: {
-            payload: {
-              installation_id: installation_id,
-              owner,
-              repo,
-              pull_number,
-              author: prData.user?.login,
-              isFreeUser: true,
-              ownerUsername: orgDataFromDb?.ownerUsername!,
-              currTime: Date.now(),
-            },
-          },
-        });
-      }
-      return NextResponse.json({ message: "Webhook processed successfully" });
-    }
-
-    await inngest.send({
-      name: "app/review-generator",
-      data: {
-        payload: {
-          installation_id: installation_id,
-          owner,
-          repo,
-          pull_number,
-          author: prData.user?.login,
-          isFreeUser: false,
+    console.log(payLoadEventType);
+    console.log(JSON.stringify(payloadParsedResult));
+    if (payLoadEventType == "opened") {
+      await db.pullRequest.create({
+        data: {
           ownerUsername: orgDataFromDb?.ownerUsername!,
-          currTime: Date.now(),
+          repoFullName: `${owner!}/${repo!}`,
+          orgname: owner!,
+          author: author,
+          pullNumber: +pull_number!,
+          timeTakenToReview: 0,
+          title,
         },
-      },
-    });
+      });
+
+      const user = await db.user.findUnique({
+        where: {
+          username: orgDataFromDb?.ownerUsername,
+        },
+      });
+
+      let onTrial = false;
+
+      if (!user) {
+        return NextResponse.json({ message: "No user found" });
+      }
+
+      onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
+
+      if (
+        !subscription ||
+        (subscription && subscription?.status !== "active")
+      ) {
+        if (onTrial) {
+          await inngest.send({
+            name: "app/review-generator",
+            data: {
+              payload: {
+                installation_id: installation_id,
+                owner,
+                repo,
+                pull_number,
+                author: prData.user?.login,
+                isFreeUser: false,
+                ownerUsername: orgDataFromDb?.ownerUsername!,
+                currTime: Date.now(),
+              },
+            },
+          });
+        } else {
+          await inngest.send({
+            name: "app/review-generator",
+            data: {
+              payload: {
+                installation_id: installation_id,
+                owner,
+                repo,
+                pull_number,
+                author: prData.user?.login,
+                isFreeUser: true,
+                ownerUsername: orgDataFromDb?.ownerUsername!,
+                currTime: Date.now(),
+              },
+            },
+          });
+        }
+        return NextResponse.json({ message: "Webhook processed successfully" });
+      }
+
+      await inngest.send({
+        name: "app/review-generator",
+        data: {
+          payload: {
+            installation_id: installation_id,
+            owner,
+            repo,
+            pull_number,
+            author: prData.user?.login,
+            isFreeUser: false,
+            ownerUsername: orgDataFromDb?.ownerUsername!,
+            currTime: Date.now(),
+          },
+        },
+      });
+    }
+
+    // new commit added
+    if (payLoadEventType == "synchronize") {
+    }
+
+    // new comment added
+    if (payLoadEventType == "created") {
+    }
 
     return NextResponse.json({ message: "Webhook processed successfully" });
   } catch (error) {
