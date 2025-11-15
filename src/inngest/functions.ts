@@ -2,7 +2,7 @@ import { Octokit } from "@octokit/rest";
 import { inngest } from "./client";
 import { createAppAuth } from "@octokit/auth-app";
 import fs from "fs";
-import { OpenAIClient } from "@/lib/openai";
+import { OpenAIClient, client } from "@/lib/openai";
 import { SYSTEM_PROMPT } from "@/constants/prompts";
 import { db } from "@/lib/prisma";
 import { envKeys } from "inngest/helpers/consts";
@@ -147,7 +147,7 @@ export const reviewGenerator = inngest.createFunction(
       fileContent += file + "\n" + fileData[file] + "\n\n";
     }
 
-    const openAiClient = new OpenAIClient();
+    const openAiClient = new OpenAIClient(client);
     let tokenCount = 0;
 
     // await step.sleep("Generating review", 500);
@@ -410,7 +410,128 @@ export const reviewGenerator = inngest.createFunction(
 );
 
 export const aiChatBotForComments = inngest.createFunction(
-  { id: "review-generator" },
-  { event: "app/review-generator" },
-  async ({ event, step }) => {}
+  { id: "ai-chatbot" },
+  { event: "app/ai-chatbot" },
+  async ({ event, step }) => {
+    const {
+      payload: {
+        installation_id,
+        owner,
+        repo,
+        pull_number,
+        author,
+        isFreeUser,
+        ownerUsername,
+      },
+    } = event?.data;
+
+    const octokit = new Octokit({
+      authStrategy: createAppAuth,
+      auth: {
+        appId: process.env.GITHUB_APP_ID!,
+        privateKey: process.env.GITHUB_APP_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+        installationId: installation_id, // Use the parameter, not env var
+      },
+    });
+
+    const formattedPrData: {
+      label: string;
+      createdAt: number;
+      body: string;
+    }[] = [];
+    let prBody = "";
+    let prTitle = "";
+
+    await step.run("Placeholder description", async () => {
+      const { data: comments } = await octokit.issues.listComments({
+        owner,
+        repo,
+        issue_number: pull_number,
+      });
+
+      comments?.forEach((it) => {
+        formattedPrData.push({
+          label: it.user?.login ?? "",
+          body: it.body ?? "",
+          createdAt: new Date(it.created_at).getTime(),
+        });
+      });
+
+      formattedPrData.sort((a, b) => a.createdAt - b.createdAt);
+      let newComment = "";
+      if (formattedPrData?.length > 0) {
+        newComment = formattedPrData[formattedPrData.length - 1]?.body;
+        formattedPrData.pop();
+      }
+
+      const { data: pr } = await octokit.pulls.get({
+        owner,
+        repo,
+        pull_number,
+      });
+
+      prBody = pr.body ?? "";
+      prTitle = pr.title;
+
+      const { data: reviews } = await octokit.pulls.listReviews({
+        owner,
+        repo,
+        pull_number,
+      });
+
+      reviews?.forEach((it) => {
+        formattedPrData.push({
+          label: `${it.user?.login}`,
+          body: it.body ?? "",
+          createdAt: it.submitted_at
+            ? new Date(it.submitted_at).getTime()
+            : Number.MAX_SAFE_INTEGER,
+        });
+      });
+
+      formattedPrData.sort((a, b) => a.createdAt - b.createdAt);
+
+      console.log(formattedPrData);
+
+      const aiContext =
+        `${prTitle}\n${prBody}\n\n` +
+        formattedPrData
+          .map((it) => {
+            return `${it.label}\n${it.body}\n\n`;
+          })
+          .join("");
+
+      const openAiClient = new OpenAIClient(client);
+
+      const aiRes = await openAiClient.chatgptModelForChatbot(
+        SYSTEM_PROMPT.comments,
+        newComment,
+        aiContext
+      );
+      if (aiRes) {
+        try {
+          await octokit.issues.createComment({
+            owner: owner,
+            repo: repo,
+            issue_number: pull_number,
+            body: `Hey! @${author}!\n${aiRes}`,
+          });
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      return formattedPrData;
+    });
+
+    return formattedPrData;
+  }
 );
+
+// export const newCommitReviewer = inngest.createFunction(
+//   { id: "commit-reviewer" },
+//   { event: "app/commit-reviewer" },
+//   async ({ event, step }) => {
+
+//   }
+// );
