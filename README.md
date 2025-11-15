@@ -62,6 +62,7 @@ GitRoaster is an AI-powered code review platform that integrates seamlessly with
 - 🎯 **Consistent Quality** - Every review follows the same high standards
 - 🔒 **Privacy-First** - Your code is analyzed but never stored
 - 👥 **Team Management** - Granular control over who gets reviews
+- 👥 **Pull Request Chat Bot** - Ask about the pr review or how to fix security concern directly inside the pull request by adding @gitroaster to you comment
 
 ## 🏃‍♂️ Quick Start
 
