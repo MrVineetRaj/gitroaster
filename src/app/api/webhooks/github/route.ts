@@ -181,15 +181,16 @@ export const POST = async (req: NextRequest) => {
 
     // console.log("author :", author);
 
-    const isAllowed = await db.userAsMemberAndOrg.findUnique({
-      where: {
-        isAllowed: true,
-        orgname_teamMemberUsername: {
-          orgname: owner!,
-          teamMemberUsername: author,
-        },
-      },
-    });
+    const isAllowed = true
+    // await db.userAsMemberAndOrg.findUnique({
+    //   where: {
+    //     isAllowed: true,
+    //     orgname_teamMemberUsername: {
+    //       orgname: owner!,
+    //       teamMemberUsername: author,
+    //     },
+    //   },
+    // });
 
     // console.log("isAllowed :", isAllowed);
     if (!isAllowed) {
