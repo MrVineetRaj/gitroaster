@@ -6,7 +6,7 @@ import { OpenAIClient, client } from "@/lib/openai";
 import { SYSTEM_PROMPT } from "@/constants/prompts";
 import { db } from "@/lib/prisma";
 import { envKeys } from "inngest/helpers/consts";
-import { PullRequestStatus } from "@/generated/prisma";
+import { PullRequestStatus } from "@/generated/prisma/client";
 import { parseJson } from "@/lib/utils";
 const excludedExtensions = [
   // images

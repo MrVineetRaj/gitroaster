@@ -1,4 +1,4 @@
-import { Plan } from "@/generated/prisma";
+import { Plan } from "@/generated/prisma/client";
 import { create } from "zustand";
 
 /**

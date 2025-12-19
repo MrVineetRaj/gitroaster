@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { UserRole } from "@/generated/prisma";
+import { UserRole } from "@/generated/prisma/client";
 import { db } from "@/lib/prisma";
 import { initTRPC, TRPCError } from "@trpc/server";
 import { cache } from "react";
