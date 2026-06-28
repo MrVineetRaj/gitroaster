@@ -11,6 +11,8 @@ import { createAppAuth } from "@octokit/auth-app";
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_APP_WEBHOOK_SECRET as string;
 const TOKEN_CAP = 20000;
 
+const VALID_ACTIONS = ["opened", "created", "synchronize"];
+
 export const POST = async (req: NextRequest) => {
   try {
     const currTime = Date.now();
@@ -34,6 +36,14 @@ export const POST = async (req: NextRequest) => {
     let diff_url: string = "";
     let repositoryName: string = "";
     let payLoadEventType = "";
+    let newCommitSha = "";
+    let commentBody = "";
+
+    let owner = "";
+    let author = "";
+    let repo = "";
+    let pull_number = 0;
+
     while (retryCnt < 10 && !isBodyParsed) {
       retryCnt++;
       const payloadParsedResponse =
@@ -53,18 +63,33 @@ export const POST = async (req: NextRequest) => {
       isBodyParsed = true;
 
       const payloadParsedResult = payloadParsedResponse.data;
-      // console.log(payloadParsedResult);
       payLoadEventType = payloadParsedResult.action;
-      console.log(JSON.stringify(payloadParsedResponse))
+      if (!VALID_ACTIONS.includes(payLoadEventType)) {
+        return NextResponse.json({
+          message: `Action ${payLoadEventType} is not supported`,
+        });
+      }
+
+      newCommitSha = payloadParsedResult?.pull_request?.head?.sha || "";
+      commentBody = payloadParsedResult?.comment?.body || "";
+      owner = payloadParsedResult?.repository?.owner?.login;
+      author = payloadParsedResult?.sender.login;
+      repo = payloadParsedResult?.repository?.name;
+      pull_number =
+        payloadParsedResult?.issue?.number ||
+        payloadParsedResult?.pull_request?.number;
+      // console.log(payloadParsedResult);
+
+      console.log(JSON.stringify(payloadParsedResponse));
 
       // if (payloadParsedResult.action !== "opened") {
       //   return NextResponse.json({
       //     message: "Webhook processed successfully but was not a pull_req_open",
       //   });
       // }
-      installation_id = payloadParsedResult.installation.id;
-      diff_url = payloadParsedResult.pull_request.diff_url;
-      repositoryName = payloadParsedResult.repository.full_name;
+      installation_id = payloadParsedResult?.installation.id || "";
+      diff_url = payloadParsedResult?.pull_request?.diff_url || "";
+      repositoryName = payloadParsedResult?.repository?.full_name || "";
     }
 
     if (!installation_id) {
@@ -87,50 +112,50 @@ export const POST = async (req: NextRequest) => {
     //   return NextResponse.json({ message: "Webhook processed successfully" });
     // }
 
-    let prDiffResponse:
-      | {
-          success: boolean;
-          message: string;
-          data: null;
-          owner: null;
-          repo: null;
-          pull_number: null;
-        }
-      | {
-          success: boolean;
-          data: object;
-          message: string;
-          owner: string;
-          repo: string;
-          pull_number: string;
-        } = {
-      success: false,
-      message: "",
-      data: null,
-      owner: null,
-      repo: null,
-      pull_number: null,
-    };
+    // let prDiffResponse:
+    //   | {
+    //       success: boolean;
+    //       message: string;
+    //       data: null;
+    //       owner: null;
+    //       repo: null;
+    //       pull_number: null;
+    //     }
+    //   | {
+    //       success: boolean;
+    //       data: object;
+    //       message: string;
+    //       owner: string;
+    //       repo: string;
+    //       pull_number: string;
+    //     } = {
+    //   success: false,
+    //   message: "",
+    //   data: null,
+    //   owner: null,
+    //   repo: null,
+    //   pull_number: null,
+    // };
 
-    retryCnt = 0;
-    let gotPrDiffResponse = false;
-    while (retryCnt < 10 && !gotPrDiffResponse) {
-      retryCnt++;
-      prDiffResponse = await githubOctokit.differenceData(
-        installation_id,
-        diff_url
-      );
+    // retryCnt = 0;
+    // let gotPrDiffResponse = false;
+    // while (retryCnt < 10 && !gotPrDiffResponse) {
+    //   retryCnt++;
+    //   prDiffResponse = await githubOctokit.differenceData(
+    //     installation_id,
+    //     diff_url
+    //   );
 
-      if (!prDiffResponse.success) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+    //   if (!prDiffResponse.success) {
+    //     await new Promise((resolve) => setTimeout(resolve, 500));
+    //   }
 
-      gotPrDiffResponse = true;
+    //   gotPrDiffResponse = true;
 
-      break;
-    }
+    //   break;
+    // }
 
-    const { owner, repo, pull_number } = prDiffResponse;
+    // const { owner, repo, pull_number } = prDiffResponse;
 
     const octokit = new Octokit({
       authStrategy: createAppAuth,
@@ -141,32 +166,14 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
-    const { data: prData } = await octokit.pulls.get({
-      owner: owner!,
-      repo: repo!,
-      pull_number: +pull_number!,
-    });
-
-    const author = prData.user?.login;
-    const title = prData.title;
-    const body = prData.body;
-
-    if (body?.includes("@gitroaster")) {
-      if (body?.includes("@!ignore")) {
-        return NextResponse.json({
-          message: "PR ignored for automated review",
-        });
-      }
-    }
-
     // console.log(author);
     // let isLargePr = false;
-    if (!prDiffResponse.data) {
-      return NextResponse.json(
-        { message: "INVALID_SECRET_KEY" },
-        { status: 401 }
-      );
-    }
+    // if (!prDiffResponse.data) {
+    //   return NextResponse.json(
+    //     { message: "INVALID_SECRET_KEY" },
+    //     { status: 401 }
+    //   );
+    // }
 
     const isRepoEnabled = await db.orgRepo.findUnique({
       where: {
@@ -178,19 +185,54 @@ export const POST = async (req: NextRequest) => {
     if (!isRepoEnabled) {
       return NextResponse.json({ message: "Repo isn't enabled for AI review" });
     }
+    // console.log("subscription :", subscription);
+
+    const orgDataFromDb = await db.orgRepo.findUnique({
+      where: {
+        orgname: owner!,
+        repoFullName: `${owner!}/${repo!}`,
+      },
+    });
+
+    // new comment added
+    if (payLoadEventType == "created") {
+      // comment.body
+
+      if (
+        commentBody.includes("@gitroaster") &&
+        !author.includes("gitroaster[bot]")
+      ) {
+        await inngest.send({
+          name: "app/ai-chatbot",
+          data: {
+            payload: {
+              installation_id: installation_id,
+              owner,
+              repo,
+              pull_number,
+              author,
+              isFreeUser: true,
+              ownerUsername: orgDataFromDb?.ownerUsername!,
+              currTime: Date.now(),
+            },
+          },
+        });
+      }
+    }
 
     // console.log("author :", author);
 
-    const isAllowed = true
-    // await db.userAsMemberAndOrg.findUnique({
-    //   where: {
-    //     isAllowed: true,
-    //     orgname_teamMemberUsername: {
-    //       orgname: owner!,
-    //       teamMemberUsername: author,
-    //     },
-    //   },
-    // });
+    const isAllowed = true;
+
+    /*await db.userAsMemberAndOrg.findUnique({
+      where: {
+        isAllowed: true,
+        orgname_teamMemberUsername: {
+          orgname: owner!,
+          teamMemberUsername: author,
+        },
+      },
+    });*/
 
     // console.log("isAllowed :", isAllowed);
     if (!isAllowed) {
@@ -220,85 +262,44 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
-    // console.log("subscription :", subscription);
-
-    const orgDataFromDb = await db.orgRepo.findUnique({
-      where: {
-        orgname: owner!,
-        repoFullName: `${owner!}/${repo!}`,
-      },
-    });
-
     if (!orgDataFromDb) {
       return NextResponse.json({ message: "No org data found" });
     }
 
-    console.log(payLoadEventType);
+    const user = await db.user.findUnique({
+      where: {
+        username: orgDataFromDb?.ownerUsername,
+      },
+    });
+
+    let onTrial = false;
+
+    if (!user) {
+      return NextResponse.json({ message: "No user found" });
+    }
+
+    onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
+
+    const isPaidUser =
+      !subscription || (subscription && subscription?.status !== "active");
+
     if (payLoadEventType == "opened") {
-      await db.pullRequest.create({
-        data: {
-          ownerUsername: orgDataFromDb?.ownerUsername!,
-          repoFullName: `${owner!}/${repo!}`,
-          orgname: owner!,
-          author: author,
-          pullNumber: +pull_number!,
-          timeTakenToReview: 0,
-          title,
-        },
+      const { data: prData } = await octokit.pulls.get({
+        owner: owner!,
+        repo: repo!,
+        pull_number: +pull_number!,
       });
 
-      const user = await db.user.findUnique({
-        where: {
-          username: orgDataFromDb?.ownerUsername,
-        },
-      });
+      // const author = prData.user?.login;
+      const title = prData.title;
+      const body = prData.body;
 
-      let onTrial = false;
-
-      if (!user) {
-        return NextResponse.json({ message: "No user found" });
-      }
-
-      onTrial = new Date(user?.trialEndAt).getTime() > Date.now();
-
-      if (
-        !subscription ||
-        (subscription && subscription?.status !== "active")
-      ) {
-        if (onTrial) {
-          await inngest.send({
-            name: "app/review-generator",
-            data: {
-              payload: {
-                installation_id: installation_id,
-                owner,
-                repo,
-                pull_number,
-                author: prData.user?.login,
-                isFreeUser: false,
-                ownerUsername: orgDataFromDb?.ownerUsername!,
-                currTime: Date.now(),
-              },
-            },
-          });
-        } else {
-          await inngest.send({
-            name: "app/review-generator",
-            data: {
-              payload: {
-                installation_id: installation_id,
-                owner,
-                repo,
-                pull_number,
-                author: prData.user?.login,
-                isFreeUser: true,
-                ownerUsername: orgDataFromDb?.ownerUsername!,
-                currTime: Date.now(),
-              },
-            },
+      if (body?.includes("@gitroaster")) {
+        if (body?.includes("@!ignore")) {
+          return NextResponse.json({
+            message: "PR ignored for automated review",
           });
         }
-        return NextResponse.json({ message: "Webhook processed successfully" });
       }
 
       await inngest.send({
@@ -310,20 +311,28 @@ export const POST = async (req: NextRequest) => {
             repo,
             pull_number,
             author: prData.user?.login,
-            isFreeUser: false,
+            isFreeUser: !isPaidUser,
             ownerUsername: orgDataFromDb?.ownerUsername!,
             currTime: Date.now(),
           },
+        },
+      });
+
+      await db.pullRequest.create({
+        data: {
+          ownerUsername: orgDataFromDb?.ownerUsername!,
+          repoFullName: `${owner!}/${repo!}`,
+          orgname: owner!,
+          author: author,
+          pullNumber: +pull_number!,
+          timeTakenToReview: 0,
+          title,
         },
       });
     }
 
     // new commit added
     if (payLoadEventType == "synchronize") {
-    }
-
-    // new comment added
-    if (payLoadEventType == "created") {
     }
 
     return NextResponse.json({ message: "Webhook processed successfully" });

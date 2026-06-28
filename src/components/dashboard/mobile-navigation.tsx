@@ -15,7 +15,7 @@ import {
 } from "@/constants/nav-menues";
 import { usePathname } from "next/navigation";
 import useAuthStore from "@/store/use-auth";
-import { Plan } from "@/generated/prisma";
+import { Plan } from "@/generated/prisma/browser";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 import { toast } from "sonner";
 import ThemeController from "../shared/theme-controller";

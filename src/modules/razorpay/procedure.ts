@@ -6,10 +6,10 @@ import {
   protectedProcedure,
 } from "@/trpc/init";
 import { db } from "@/lib/prisma";
-// import { ReviewStatus } from "@/generated/prisma";
+// import { ReviewStatus } from "@/generated/prisma/client";
 import { TRPCError } from "@trpc/server";
 import { ContextMenuContent } from "@radix-ui/react-context-menu";
-import { InvitationStatus } from "@/generated/prisma";
+import { InvitationStatus } from "@/generated/prisma/client";
 import { razorpayInstance } from "./utils";
 // import { razorpayInstance } from "../razorpay/utils";
 

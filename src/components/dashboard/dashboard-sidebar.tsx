@@ -42,8 +42,9 @@ import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
 import { useMutation } from "@tanstack/react-query";
 import useAuthStore from "@/store/use-auth";
-import { Plan, UserRole } from "@/generated/prisma";
+
 import usePlanStore from "@/store/use-plans";
+import { Plan, UserRole } from "@/generated/prisma/browser";
 
 interface Props {
   session: Session | null;

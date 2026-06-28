@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { createTRPCRouter, teamMemberProtectedProcedure } from "@/trpc/init";
 import { db } from "@/lib/prisma";
-// import { ReviewStatus } from "@/generated/prisma";
+// import { ReviewStatus } from "@/generated/prisma/client";
 import { TRPCError } from "@trpc/server";
 import {
   $Enums,
   PullRequestStatus,
   SubscriptionStatus,
-} from "@/generated/prisma";
+} from "@/generated/prisma/client";
 // import { razorpayInstance } from "../razorpay/utils";
 
 export const dashboardRouter = createTRPCRouter({
