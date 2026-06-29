@@ -1,22 +1,19 @@
 "use client";
-import PlanCard from "@/components/dashboard/admin/plan/plan-card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Plan } from "@/generated/prisma/client";
-import usePlanStore from "@/store/use-plans";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import {
+  CheckCircle2Icon,
+  CreditCardIcon,
+  SparklesIcon,
+} from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export const BillingPage = () => {
-  const { getPlans, isPlansLoaded } = usePlanStore();
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("monthly");
-  const [plansToDisplay, setPlansToDisplay] = useState<Plan[]>([]);
   const [interestMessage, setInterestMessage] = useState<string>("");
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -42,116 +39,103 @@ export const BillingPage = () => {
       },
     })
   );
-  useEffect(() => {
-    if (isPlansLoaded) {
-      const plans = getPlans(selectedPeriod);
-      setPlansToDisplay(plans);
-    }
-  }, [selectedPeriod, isPlansLoaded]);
 
   return (
-    // <div className="flex flex-col min-h-screen bg-background">
-    //   <div className="sticky top-0 z-10 bg-card border-b">
-    //     <div className="flex items-center justify-between p-2">
-    //       <div className="space-y-1">
-    //         <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-3">
-    //           Billing
-    //         </h1>
-    //         <p className="text-xs md:text-sm text-muted-foreground italic">
-    //           Manage your plan here
-    //         </p>
-    //       </div>
-    //     </div>
-    //   </div>
-
-    //   <div className="mt-2 p-4">
-    //     <Tabs defaultValue="billing">
-    //       <TabsList>
-    //         <TabsTrigger value="billing">Billing</TabsTrigger>
-    //         <TabsTrigger value="upgrade">Upgrade</TabsTrigger>
-    //       </TabsList>
-    //       <TabsContent value="billing">
-    //         {/* {JSON.stringify(plansToDisplay)} */}
-    //         <div className="flex items-center gap-10 justify-center w-full">
-    //           {!isPlansLoaded && plansToDisplay.length <= 0 ? (
-    //             <>Loading Plans</>
-    //           ) : (
-    //             plansToDisplay?.map((plan) => {
-    //               return (
-    //                 <PlanCard
-    //                   isAdminPage={false}
-    //                   plan={plan}
-    //                   currentPlan={false}
-    //                   key={plan?.planId}
-    //                 />
-    //               );
-    //             })
-    //           )}
-    //         </div>
-    //       </TabsContent>
-    //       <TabsContent value="upgrade">Upgrade</TabsContent>
-    //     </Tabs>
-    //   </div>
-    // </div>
-    <div className="flex flex-col min-h-screen bg-background">
-      <div className="sticky top-0 z-10 bg-card border-b h-18">
-        <div className="flex items-center justify-between p-2">
-          <div className="space-y-1">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-3">
-              Billing
-            </h1>
-
-            <p className="text-xs md:text-sm text-muted-foreground italic">
-              Manage your plan here
-            </p>
-          </div>
+    <div className="relative flex h-full max-h-svh flex-col overflow-hidden bg-background">
+      {/* Header */}
+      <header className="relative z-20 flex h-[68px] shrink-0 items-center gap-3 border-b bg-card px-6 shadow-sm">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+          <CreditCardIcon className="size-5" />
+        </span>
+        <div className="min-w-0 space-y-0.5">
+          <h1 className="truncate text-base font-bold leading-tight tracking-tight md:text-lg">
+            Billing
+          </h1>
+          <p className="truncate text-xs text-muted-foreground">
+            Manage your plan and upcoming upgrades
+          </p>
         </div>
-      </div>
+      </header>
 
-      <div className="flex-1 h-full w-full  flex items-center justify-center">
-        {loadingInterest ? (
-          <Skeleton className="w-full md:w-1/2 lg:w-1/3 p-4 border flex flex-col gap-2 bg-card rounded-sm h-[60vh]" />
-        ) : interest?.data ? (
-          <div className="w-full md:w-1/2 lg:w-1/3 p-4 border flex flex-col gap-2 bg-card rounded-sm">
-            You have already shown interest for the upgradable plans. We will
-            reach out to you soon.
-          </div>
-        ) : (
-          <form
-            className="w-full md:w-1/2 lg:w-1/3 p-4 border flex flex-col gap-2 bg-card rounded-sm"
-            onSubmit={(e) => {
-              e.preventDefault();
-              toast.loading("Recording your interest", {
-                id: "billing-interest",
-              });
-              showInterest.mutate({
-                message: interestMessage || "Interested in upgradable plans",
-              });
-            }}
-          >
-            <legend className="pb-4 border-b mb-4">
-              <h1 className="text-2xl font-bold ">
-                Show interest for the upgradable plans
-              </h1>
-            </legend>
+      <div className="relative flex-1 overflow-y-auto">
+        {/* ambient glow backdrop, scoped to the scroll area */}
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -left-40 -top-40 size-96 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute -right-32 bottom-0 size-96 rounded-full bg-tertiary/10 blur-3xl" />
+        </div>
 
-            <span className="mb-4 grid grid-cols-1 gap-1">
-              <Label htmlFor="name" className="mb-2 col-span-1 h-full">
-                Message {"(Optional)"}
-              </Label>
-              <Textarea
-                rows={20}
-                id="email"
-                name="name"
-                placeholder="Hey there, ..."
-                className="col-span-1"
-                onChange={(e) => setInterestMessage(e.target.value)}
-                value={interestMessage}
-              />
-            </span>
-            <Button type="submit">Show interest</Button>
-          </form>
-        )}
+        <div className="flex min-h-full items-center justify-center p-5">
+          {loadingInterest ? (
+            <Skeleton className="h-[440px] w-full max-w-xl rounded-2xl" />
+          ) : interest?.data ? (
+            <div className="flex w-full max-w-xl flex-col items-center gap-4 rounded-2xl border bg-card/60 p-8 text-center backdrop-blur-sm">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-secondary/15 text-secondary">
+                <CheckCircle2Icon className="size-7" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-xl font-bold tracking-tight">
+                  You&apos;re on the list!
+                </h2>
+                <p className="mx-auto max-w-md text-sm text-muted-foreground">
+                  You&apos;ve already expressed interest in our upgradable plans.
+                  We&apos;ll reach out to you as soon as they go live.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <form
+              className="w-full max-w-xl overflow-hidden rounded-2xl border bg-card/60 backdrop-blur-sm"
+              onSubmit={(e) => {
+                e.preventDefault();
+                toast.loading("Recording your interest", {
+                  id: "billing-interest",
+                });
+                showInterest.mutate({
+                  message: interestMessage || "Interested in upgradable plans",
+                });
+              }}
+            >
+              <div className="space-y-3 border-b bg-gradient-to-br from-primary/5 to-secondary/5 p-6">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  <SparklesIcon className="size-3.5" />
+                  Coming soon
+                </span>
+                <div className="space-y-1.5">
+                  <h2 className="text-xl font-bold tracking-tight">
+                    Premium plans are on the way
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Let us know you&apos;re interested and we&apos;ll notify you
+                    first when paid plans with higher limits and advanced reviews
+                    launch.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="interest-message">Message (Optional)</Label>
+                  <Textarea
+                    rows={6}
+                    id="interest-message"
+                    name="message"
+                    placeholder="Tell us what you'd love to see in a paid plan..."
+                    onChange={(e) => setInterestMessage(e.target.value)}
+                    value={interestMessage}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full gap-2"
+                  disabled={showInterest.isPending}
+                >
+                  <SparklesIcon className="size-4" />
+                  {showInterest.isPending ? "Submitting..." : "Show interest"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

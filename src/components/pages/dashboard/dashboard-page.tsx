@@ -1,24 +1,18 @@
-import RepoContainer from "@/components/dashboard/repositories/repo-container";
 import { GitroasterUsage } from "@/components/dashboard/usage-chart";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn, formatCompactTime } from "@/lib/utils";
+import { formatCompactTime } from "@/lib/utils";
+import { ActivityCard } from "./activity-card";
+import { RecentActivityModal } from "./recent-activity-modal";
 import { githubOctokit } from "@/modules/github/utils";
 import { caller } from "@/trpc/server";
 import {
-  AlertCircleIcon,
+  ArrowUpRightIcon,
   ClockIcon,
   ExternalLinkIcon,
   GitBranchIcon,
   GitPullRequestIcon,
+  LayoutDashboardIcon,
   LucideProps,
   PlusIcon,
   ShieldCheckIcon,
@@ -30,58 +24,59 @@ import React from "react";
 export const DashboardPage = async () => {
   try {
     const { user, installationId } = await caller.userRouter.syncUser();
-    const pullRequestData = await caller.dashboardRouter.getPRData({
-      page: 1,
-      limit: 20,
-      orgname: user?.defaultOrg || "",
-    });
-    const chartData = await caller.dashboardRouter.getUsageData({
-      days: 7,
-      orgname: user?.defaultOrg || "",
-      endDateInMS: Date.now(),
-    });
+    const orgname = user?.defaultOrg || "";
 
-    const quickCardData = await caller.dashboardRouter.getQuickCard({
-      orgname: user?.defaultOrg || "",
-    });
+    // Fetch everything in parallel instead of sequential awaits.
+    const [
+      pullRequestData,
+      chartData,
+      quickCardData,
+      githubRepos,
+      connectedRepo,
+    ] = await Promise.all([
+      caller.dashboardRouter.getPRData({ page: 1, limit: 5, orgname }),
+      caller.dashboardRouter.getUsageData({
+        days: 7,
+        orgname,
+        endDateInMS: Date.now(),
+      }),
+      caller.dashboardRouter.getQuickCard({ orgname }),
+      githubOctokit.getEnabledRepoForGitRoaster(
+        user?.username,
+        user?.defaultOrg,
+        installationId || "00000"
+      ),
+      caller.githubRouter.getAllConnectedRepo({ orgname }),
+    ]);
 
     const {
       repos,
       installationIdFromGithub,
       success: isGitroasterAppDownloaded,
-    } = await githubOctokit.getEnabledRepoForGitRoaster(
-      user?.username,
-      user?.defaultOrg,
-      installationId || "00000"
-    );
+    } = githubRepos;
 
-    const connectedRepo = await caller.githubRouter.getAllConnectedRepo({
-      orgname: user?.defaultOrg || "",
-    });
-
-    const repoCount = repos?.length ?? 0;
     let connectedRepoCount = 0;
     const isAnyRepoConnected = connectedRepo.some((item) => item.isConnected);
 
     if (isAnyRepoConnected) {
-      for (const repo of repos) {
-        for (const connected of connectedRepo) {
-          if (repo.full_name === connected.repoFullName) {
-            connectedRepoCount += 1;
-            break;
-          }
-        }
-      }
+      const connectedNames = new Set(
+        connectedRepo
+          .filter((c) => c.isConnected)
+          .map((c) => c.repoFullName)
+      );
+      connectedRepoCount = repos.filter((repo) =>
+        connectedNames.has(repo.full_name)
+      ).length;
     }
 
     const QUICK_CARD_CONTENT: {
       title: string;
-      link?: string;
       icon: React.ForwardRefExoticComponent<
         Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
       >;
       stat: number | string;
       statDesc?: number | string;
+      accent: string;
     }[] = [
       {
         title: "Reviews Completed",
@@ -90,6 +85,7 @@ export const DashboardPage = async () => {
         statDesc: `+${
           quickCardData.pullRequestDataMonthly._count?.id || 0
         } this week`,
+        accent: "primary",
       },
       {
         title: "Avg Review Time",
@@ -103,19 +99,22 @@ export const DashboardPage = async () => {
           quickCardData.pullRequestData._count?.id > 0
             ? "⚡ Lightning fast AI"
             : "⏳ Waiting for first review",
+        accent: "secondary",
       },
       {
         title: "Tokens Used",
-        icon: ZapIcon, // or use a different icon like ZapIcon
+        icon: ZapIcon,
         stat:
           (quickCardData?.pullRequestDataMonthly?.tokenCount || 0) + " tokens",
         statDesc: "out of 2,000,000 tokens",
+        accent: "tertiary",
       },
       {
         title: "Connected Repos",
         icon: GitBranchIcon,
         stat: connectedRepoCount || 0,
         statDesc: "Active repositories",
+        accent: "chart-4",
       },
     ];
 
@@ -128,272 +127,187 @@ export const DashboardPage = async () => {
             user.defaultOrg
           }/settings/installations/${installationId || "00000"}`;
 
-    const appInstallationURL = `https://github.com/apps/gitroaster`;
-
     return (
-      <div className="flex flex-col min-h-screen bg-background">
+      <div className="relative flex h-full max-h-svh flex-col overflow-hidden bg-background">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-card border-b h-18">
-          <div className="flex items-center justify-between p-2">
-            <div className="space-y-1">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-3">
-                Welcome back
-                <span className="text-primary">{user?.username}</span>
+        <header className="relative z-20 flex h-[68px] shrink-0 items-center justify-between gap-4 border-b bg-card px-6 shadow-sm">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+              <LayoutDashboardIcon className="size-5" />
+            </span>
+            <div className="min-w-0 space-y-0.5">
+              <h1 className="truncate text-base font-bold leading-tight tracking-tight md:text-lg">
+                Welcome back,{" "}
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  {user?.username}
+                </span>
               </h1>
-              <p className="text-xs md:text-sm text-muted-foreground italic">
-                Here you can find overview of your usage
+              <p className="truncate text-xs text-muted-foreground">
+                Overview of your AI code review activity
               </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-3">
-              {installationIdFromGithub && (
-                <>
-                  <Button asChild variant="outline" className="hidden sm:flex">
-                    <Link
-                      href={appManagementURL}
-                      target="_blank"
-                      className="flex gap-2 items-center"
-                    >
-                      <PlusIcon className="w-4 h-4" />
-                      Manage App
-                      <ExternalLinkIcon className="w-3 h-3" />
-                    </Link>
-                  </Button>
-                </>
-              )}
+          {installationIdFromGithub && (
+            <Button asChild size="sm" className="hidden shrink-0 gap-2 sm:flex">
+              <Link href={appManagementURL} target="_blank">
+                <PlusIcon className="size-4" />
+                Manage App
+                <ExternalLinkIcon className="size-3" />
+              </Link>
+            </Button>
+          )}
+        </header>
+
+        <div className="relative flex flex-1 flex-col overflow-hidden">
+          {/* ambient glow backdrop, scoped to the scroll area */}
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute -right-32 top-20 size-80 rounded-full bg-secondary/10 blur-3xl" />
+            <div className="absolute -left-32 top-1/2 size-80 rounded-full bg-primary/10 blur-3xl" />
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-5 p-5">
+          {/* Privacy pill */}
+          <div className="flex shrink-0 items-start gap-3 rounded-2xl border border-secondary/30 bg-secondary/5 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/15 text-secondary">
+              <ShieldCheckIcon className="size-5" />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold">Privacy-First Architecture</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                GitRoaster analyzes your code in real-time but never stores it.
+                Only PR metadata (numbers, timestamps, status) is tracked — your
+                code, vulnerabilities, and suggestions live only in GitHub PR
+                comments.
+              </p>
             </div>
           </div>
-        </div>
-        <div className="p-4 space-y-4">
-          {/* Privacy Notice */}
-          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
-              <ShieldCheckIcon className="w-5 h-5" />
-              <span className="font-semibold">Privacy-First Architecture</span>
-            </div>
-            <p className="text-sm text-green-600 dark:text-green-400">
-              GitRoaster analyzes your code in real-time but never stores it.
-              Only PR metadata (numbers, timestamps, status) is tracked. Your
-              code content, vulnerabilities, and suggestions remain in GitHub PR
-              comments only.
-            </p>
-          </div>
-          {/* data card */}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-            {QUICK_CARD_CONTENT?.map((data, idx) => (
-              <Card
-                className="relative overflow-hidden rounded-none hover:bg-primary/20 transition-all hover:scale-[1.02] hover:z-30 duration-200"
+          {/* Stat tiles */}
+          <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {QUICK_CARD_CONTENT.map((data, idx) => (
+              <div
                 key={idx}
+                className="group relative overflow-hidden rounded-2xl border bg-card/60 p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 ">
-                  <CardTitle className="text-sm font-medium">
+                <div
+                  className="absolute -right-8 -top-8 size-24 rounded-full blur-2xl transition-opacity duration-300 group-hover:opacity-100 opacity-50"
+                  style={{ background: `var(--${data.accent})` }}
+                />
+                <div className="relative flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">
                     {data.title}
-                  </CardTitle>
-                  <data.icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{data.stat}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {data?.statDesc}
-                  </p>
-                  <div className="absolute z-10 top-0 right-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600" />
-                </CardContent>
-              </Card>
+                  </span>
+                  <span
+                    className="flex size-9 items-center justify-center rounded-xl"
+                    style={{
+                      background: `color-mix(in oklab, var(--${data.accent}) 15%, transparent)`,
+                      color: `var(--${data.accent})`,
+                    }}
+                  >
+                    <data.icon className="size-4" />
+                  </span>
+                </div>
+                <div className="relative mt-3 text-2xl font-bold tracking-tight">
+                  {data.stat}
+                </div>
+                <p className="relative mt-1 text-xs text-muted-foreground">
+                  {data.statDesc}
+                </p>
+              </div>
             ))}
           </div>
-          {/* Usage | Pull requests */}
-          <div className="flex flex-col xl:flex-row  gap-2">
-            <div className="flex-1">
+
+          {/* Chart + activity feed */}
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-5">
+            <div className="xl:col-span-3">
               <GitroasterUsage chartData={chartData} />
             </div>
-            <div className="flex-1 flex flex-col gap-2">
-              {isGitroasterAppDownloaded && pullRequestData?.length > 0 ? (
-                pullRequestData.slice(0, 5)?.map((item) => (
-                  <div
-                    className={
-                      "rounded-none p-4  border bg-card hover:bg-primary/20"
-                    }
-                    key={item.id}
-                  >
-                    <span className="flex items-center justify-between">
-                      <h3 className="flex items-center justify-between font-bold text-lg gap-2">
-                        <span className="">{item?.title} </span>
-                        <Link
-                          href={`https://www.github.com/${item?.repoFullName}/pull/${item?.pullNumber}`}
-                          className=" flex items-center"
-                          target="_blank"
-                        >
-                          <Badge className="rounded-none bg-blue-500 text-white">{`#${item?.pullNumber}`}</Badge>
-                        </Link>
-                      </h3>
-                      <Badge
-                        className={cn(
-                          " rounded-none",
-                          item.status === "SUCCESS" ? "bg-green-500" : ""
-                        )}
-                      >
-                        {item?.status}
-                      </Badge>
-                    </span>
-                    <span className="flex text-sm items-center gap-2">
-                      <p>By {item?.author}</p>
-                      <p className="text-muted-foreground">
-                        {item?.timeTakenToReview < 60000
-                          ? "in " +
-                            Math.floor(item.timeTakenToReview / 1000) +
-                            " sec(s)"
-                          : "within " +
-                            Math.ceil(item.timeTakenToReview / 60000) +
-                            " min(s)"}
-                      </p>
 
-                      <Badge className="" variant={"outline"}>
-                        {item?.tokenCount} tokens
-                      </Badge>
-                    </span>
-                    <p className="flex items-center gap-2 text-muted-foreground text-sm">
-                      <GitBranchIcon className="w-4 h-4" />
-                      {item?.repoFullName}
-                    </p>
-                  </div>
+            <div className="flex min-h-0 flex-col gap-3 xl:col-span-2">
+              <div className="flex shrink-0 items-center justify-between px-1">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Recent Activity
+                </h2>
+                <Link
+                  href="/dashboard/repositories"
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  Repositories <ArrowUpRightIcon className="size-3" />
+                </Link>
+              </div>
+
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+              {isGitroasterAppDownloaded && pullRequestData.items.length > 0 ? (
+                pullRequestData.items.map((item) => (
+                  <ActivityCard key={item.id} item={item} />
                 ))
               ) : (
-                <div className="h-full bg-card w-full border flex flex-col items-center justify-center gap-4">
-                  <h1 className="text-xl font-bold italic">
-                    No Pull requests are reviewed
-                  </h1>
-                  <p className="text-sm text-muted-foreground italic">
-                    Get started by creating a pull request in one of your
-                    connected repositories.
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed bg-card/40 p-8 text-center">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <GitPullRequestIcon className="size-6" />
+                  </div>
+                  <h3 className="font-semibold">No reviews yet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Open a pull request in a connected repository to get started.
                   </p>
-                  <Button asChild variant="outline">
-                    <Link
-                      href={`/dashboard/repositories`}
-                      className="flex gap-2 items-center"
-                    >
-                      {"Manage connected Repositories"}
-
-                      <ExternalLinkIcon className="w-3 h-3" />
+                  <Button asChild variant="outline" className="gap-2">
+                    <Link href="/dashboard/repositories">
+                      Manage Repositories
+                      <ExternalLinkIcon className="size-3" />
                     </Link>
                   </Button>
                 </div>
               )}
-              {/* {pullRequestData?.length > 5 && (
-                <Button variant="outline">View More</Button>
-              )} */}
+              </div>
+
+              {isGitroasterAppDownloaded && pullRequestData.items.length > 0 && (
+                <div className="shrink-0">
+                  <RecentActivityModal orgname={orgname} />
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+      </div>
     );
   } catch (error) {
-    return <div>Error loading dashboard. Please try again later.</div>;
+    return (
+      <div className="flex h-full min-h-screen w-full items-center justify-center text-muted-foreground">
+        Error loading dashboard. Please try again later.
+      </div>
+    );
   }
 };
 
 export const DashboardPageLoader = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Header Skeleton */}
-      <div className="sticky top-0 z-10 bg-card border-b h-18">
-        <div className="flex items-center justify-between p-2">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-6 w-24" />
-            </div>
-            <Skeleton className="h-4 w-64" />
-          </div>
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-9 w-32 hidden sm:block" />
+    <div className="flex h-full max-h-svh flex-col overflow-hidden bg-background">
+      <header className="flex shrink-0 items-center justify-between gap-4 border-b bg-card/40 px-6 py-4 backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-10 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-56" />
+            <Skeleton className="h-3 w-64" />
           </div>
         </div>
-      </div>
+        <Skeleton className="hidden h-9 w-32 sm:block" />
+      </header>
 
-      <div className="p-4 space-y-4">
-        {/* Privacy Notice */}
-        <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
-            <ShieldCheckIcon className="w-5 h-5" />
-            <span className="font-semibold">Privacy-First Architecture</span>
-          </div>
-          <p className="text-sm text-green-600 dark:text-green-400">
-            GitRoaster analyzes your code in real-time but never stores it. Only
-            PR metadata (numbers, timestamps, status) is tracked. Your code
-            content, vulnerabilities, and suggestions remain in GitHub PR
-            comments only.
-          </p>
-        </div>
+      <div className="flex-1 space-y-5 overflow-y-auto p-5">
+        <Skeleton className="h-24 w-full rounded-2xl" />
 
-        {/* Quick Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, idx) => (
-            <Card className="relative overflow-hidden rounded-none" key={idx}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16 mb-2" />
-                <Skeleton className="h-3 w-32" />
-                <div className="absolute z-10 top-0 right-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600" />
-              </CardContent>
-            </Card>
+            <Skeleton key={idx} className="h-32 rounded-2xl" />
           ))}
         </div>
 
-        {/* Usage Chart and Pull Requests Skeleton */}
-        <div className="flex gap-2">
-          {/* Usage Chart Skeleton */}
-          <div className="flex-1">
-            <Card className="rounded-none">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Skeleton className="h-5 w-32 mb-1" />
-                    <Skeleton className="h-3 w-48" />
-                  </div>
-                  <Skeleton className="h-8 w-24" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] flex items-end justify-between gap-2 px-4">
-                  {Array.from({ length: 7 }).map((_, i) => (
-                    <Skeleton
-                      key={i}
-                      className={`w-8 bg-blue-200 dark:bg-blue-800`}
-                      style={{
-                        height: `${Math.random() * 200 + 50}px`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Pull Requests Skeleton */}
-          <div className="flex-1 flex flex-col gap-2">
-            {Array.from({ length: 5 }).map((_, idx) => (
-              <div className="rounded-none p-4 border bg-card" key={idx}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-5 w-48" />
-                    <Skeleton className="h-6 w-12" />
-                  </div>
-                  <Skeleton className="h-6 w-20" />
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-5 w-16" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-4 w-4" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              </div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+          <Skeleton className="h-[360px] rounded-2xl xl:col-span-3" />
+          <div className="flex flex-col gap-3 xl:col-span-2">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <Skeleton key={idx} className="h-28 rounded-2xl" />
             ))}
           </div>
         </div>

@@ -28,7 +28,7 @@ const OrganizationPageForTeamMember = async ({
 
   try {
     const { user } = await caller.userRouter.syncUser();
-    const pullRequestData = await caller.dashboardRouter.getPRData({
+    const { items: pullRequestData } = await caller.dashboardRouter.getPRData({
       page: 1,
       limit: 20,
       orgname: orgname || "",

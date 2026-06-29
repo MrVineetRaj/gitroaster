@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest --passWithNoTests",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "db:push": "pnpm dlx prisma db push",
+    "db:pull": "pnpm dlx prisma db pull",
+    "db:generate": "pnpm dlx prisma generate",
+    "db:studio": "pnpm dlx prisma studio",
+    "inngest:dev":"pnpm dlx inngest-cli@latest dev"
   },
   "dependencies": {
     "@dqbd/tiktoken": "^1.0.21",
@@ -56,7 +61,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
-    "inngest": "^3.40.1",
+    "inngest": "^4.11.0",
     "input": "^1.0.1",
     "input-otp": "^1.4.2",
     "jest-environment-jsdom": "^30.1.2",

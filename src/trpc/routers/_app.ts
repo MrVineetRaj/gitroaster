@@ -1,4 +1,5 @@
 
+import type { inferRouterOutputs } from "@trpc/server";
 import { createTRPCRouter } from "../init";
 
 import { userRouter } from "@/modules/user/provider";
@@ -20,3 +21,6 @@ export const appRouter = createTRPCRouter({
 
 // export type definition of API
 export type AppRouter = typeof appRouter;
+
+// helper to infer procedure output types on the client
+export type RouterOutputs = inferRouterOutputs<AppRouter>;
