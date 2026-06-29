@@ -11,17 +11,17 @@ import ThemeController from "./theme-controller";
 
 export const Navbar = ({ session }: { session: Session | null }) => {
   return (
-    <header className="bg-background   w-full flex flex-col items-center border-b">
-      <nav className="max-w-[1200px] px-4 flex items-center justify-between py-2 w-full">
+    <header className="sticky top-0 z-50 flex w-full flex-col items-center border-b bg-background/80 backdrop-blur-xl">
+      <nav className="flex w-full max-w-[1200px] items-center justify-between px-4 py-2">
         <Link href={"/"} className="flex items-center gap-2">
           <Image
-            className="size-12"
+            className="size-10"
             src={"/logo.png"}
             width={120}
             height={120}
             alt="logo"
           />
-          <h2 className="text-xl font-semibold">GitRoaster</h2>
+          <h2 className="text-xl font-semibold tracking-tight">GitRoaster</h2>
         </Link>
         <span className="flex items-center gap-2">
           <ThemeController />

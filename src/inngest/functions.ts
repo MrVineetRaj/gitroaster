@@ -5,7 +5,7 @@ import fs from "fs";
 import { OpenAIClient, client } from "@/lib/openai";
 import { SYSTEM_PROMPT } from "@/constants/prompts";
 import { db } from "@/lib/prisma";
-import { envKeys } from "inngest/helpers/consts";
+// import { envKeys } from "inngest/helpers/consts";
 import { PullRequestStatus } from "@/generated/prisma/client";
 import { parseJson } from "@/lib/utils";
 const excludedExtensions = [
@@ -53,8 +53,7 @@ const excludedExtensions = [
 const excludeFileWords = ["lock", "migration"];
 
 export const reviewGenerator = inngest.createFunction(
-  { id: "review-generator" },
-  { event: "app/review-generator" },
+  { id: "review-generator", triggers: [{ event: "app/review-generator" }] },
   async ({ event, step }) => {
     // const eventId = event.id || Math.random().toString(36);
 
@@ -64,7 +63,7 @@ export const reviewGenerator = inngest.createFunction(
       payload: {
         installation_id,
         owner,
-        repo,
+        repo: rawRepo,
         pull_number,
         author,
         isFreeUser,
@@ -72,6 +71,10 @@ export const reviewGenerator = inngest.createFunction(
         currTime,
       },
     } = event?.data;
+
+    // `repo` is sometimes passed as the full "owner/repo" slug; the GitHub
+    // API expects just the repo name, so strip any owner prefix.
+    const repo = rawRepo.includes("/") ? rawRepo.split("/").pop()! : rawRepo;
 
     const octokit = new Octokit({
       authStrategy: createAppAuth,
@@ -109,7 +112,7 @@ export const reviewGenerator = inngest.createFunction(
         repo: repo!,
         pull_number: +pull_number!,
         per_page: 100,
-      }
+      },
     )) {
       files.push(...response.data);
     }
@@ -138,7 +141,7 @@ export const reviewGenerator = inngest.createFunction(
 
         // Exclude by extension (case-insensitive)
         return !excludedExtensions.some((ext) =>
-          filename.toLowerCase().endsWith(ext)
+          filename.toLowerCase().endsWith(ext),
         );
       });
 
@@ -160,7 +163,7 @@ export const reviewGenerator = inngest.createFunction(
           try {
             const res = await openAiClient.chatgptModelFree(
               SYSTEM_PROMPT.summary.header,
-              fileContent
+              fileContent,
             );
             if (res) {
               const aiResp = JSON.parse(res);
@@ -211,7 +214,7 @@ export const reviewGenerator = inngest.createFunction(
             try {
               const res = await openAiClient.chatgptModelFree(
                 SYSTEM_PROMPT.largePullRequests,
-                JSON.stringify(filenames)
+                JSON.stringify(filenames),
               );
               if (res) {
                 const aiResp = JSON.parse(res);
@@ -251,7 +254,7 @@ export const reviewGenerator = inngest.createFunction(
                 status: PullRequestStatus.SUMMARIZED,
               },
             });
-          }
+          },
         );
       }
       return { char: fileContent.length, token: tokenCount };
@@ -263,7 +266,7 @@ export const reviewGenerator = inngest.createFunction(
         const result = await openAiClient.chatgptModelPaid(
           SYSTEM_PROMPT.header,
           fileContent,
-          tokenCount <= 29000 ? "gpt-4.1" : "gpt-4.1-mini"
+          tokenCount <= 29000 ? "gpt-4.1" : "gpt-4.1-mini",
         );
 
         const res = parseJson(result);
@@ -301,7 +304,7 @@ export const reviewGenerator = inngest.createFunction(
           try {
             const summaryResult = await openAiClient.chatgptModelFree(
               SYSTEM_PROMPT.summary.header,
-              aiResp.overall_review
+              aiResp.overall_review,
             );
 
             const summaryResponse = parseJson(summaryResult);
@@ -359,7 +362,7 @@ export const reviewGenerator = inngest.createFunction(
           try {
             const result = await openAiClient.chatgptModelFree(
               SYSTEM_PROMPT.largePullRequests,
-              JSON.stringify(filenames)
+              JSON.stringify(filenames),
             );
 
             const res = parseJson(result);
@@ -401,29 +404,32 @@ export const reviewGenerator = inngest.createFunction(
           } catch (error) {
             // console.log(error);
           }
-        }
+        },
       );
     }
 
     return { char: fileContent.length, token: tokenCount };
-  }
+  },
 );
 
 export const aiChatBotForComments = inngest.createFunction(
-  { id: "ai-chatbot" },
-  { event: "app/ai-chatbot" },
+  { id: "ai-chatbot", triggers: [{ event: "app/ai-chatbot" }] },
   async ({ event, step }) => {
     const {
       payload: {
         installation_id,
         owner,
-        repo,
+        repo: rawRepo,
         pull_number,
         author,
         isFreeUser,
         ownerUsername,
       },
     } = event?.data;
+
+    // `repo` is sometimes passed as the full "owner/repo" slug; the GitHub
+    // API expects just the repo name, so strip any owner prefix.
+    const repo = rawRepo.includes("/") ? rawRepo.split("/").pop()! : rawRepo;
 
     const octokit = new Octokit({
       authStrategy: createAppAuth,
@@ -506,7 +512,7 @@ export const aiChatBotForComments = inngest.createFunction(
       const aiRes = await openAiClient.chatgptModelForChatbot(
         SYSTEM_PROMPT.comments,
         newComment,
-        aiContext
+        aiContext,
       );
       if (aiRes) {
         try {
@@ -525,7 +531,7 @@ export const aiChatBotForComments = inngest.createFunction(
     });
 
     return formattedPrData;
-  }
+  },
 );
 
 // export const newCommitReviewer = inngest.createFunction(

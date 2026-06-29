@@ -19,7 +19,8 @@ export const dashboardRouter = createTRPCRouter({
         orgname: z.string(),
       })
     )
-    .mutation(async ({ input: { limit, page, orgname }, ctx }) => {
+    .query(async ({ input: { limit, page, orgname }, ctx }) => {
+      // fetch one extra row to cheaply determine whether a next page exists
       const pullRequests = await db.pullRequest.findMany({
         where: {
           // ownerUsername: ctx?.auth?.githubUsername,
@@ -29,10 +30,16 @@ export const dashboardRouter = createTRPCRouter({
           createdAt: "desc",
         },
         skip: (page - 1) * limit,
-        take: limit,
+        take: limit + 1,
       });
 
-      return pullRequests;
+      const hasMore = pullRequests.length > limit;
+
+      return {
+        items: hasMore ? pullRequests.slice(0, limit) : pullRequests,
+        page,
+        hasMore,
+      };
     }),
   getUsageData: teamMemberProtectedProcedure
     .input(

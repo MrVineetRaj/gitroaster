@@ -21,9 +21,20 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { CheckIcon, LogOutIcon, XOctagon } from "lucide-react";
+import {
+  Building2Icon,
+  CheckIcon,
+  LogOutIcon,
+  PlusIcon,
+  ShieldCheckIcon,
+  UsersIcon,
+  XIcon,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+
+const getInitials = (name?: string) =>
+  (name || "?").trim().slice(0, 2).toUpperCase();
 
 export const ManageTeam = () => {
   const { defaultOrg, username } = useAuthStore();
@@ -93,56 +104,61 @@ export const ManageTeam = () => {
   });
 
   return (
-    <>
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Manage Team</h3>
-        <AlertDialog open={openModel}>
-          <AlertDialogTrigger
-            onClick={() => {
-              setOpenModel(true);
-            }}
-            className="bg-accent/30 px-4 py-2 rounded-md border"
-          >
-            <span>Invite Member</span>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <h3 className="text-base font-bold">Manage Team</h3>
+          <p className="text-xs text-muted-foreground">
+            People with access to{" "}
+            <span className="font-medium text-foreground">{defaultOrg}</span>
+          </p>
+        </div>
+        <AlertDialog open={openModel} onOpenChange={setOpenModel}>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" className="gap-2">
+              <PlusIcon className="size-4" />
+              Invite Member
+            </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle
-                onClick={() => {
-                  setOpenModel(true);
-                }}
-              >
-                Send Invitation
-              </AlertDialogTitle>
+              <AlertDialogTitle>Send Invitation</AlertDialogTitle>
               <AlertDialogDescription>
-                <span className="grid grid-cols-4 gap-2">
-                  <Label className="col-span-1">Username</Label>
-                  <Input
-                    type="text"
-                    placeholder={username}
-                    className="col-span-3"
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        username: e.target.value,
-                      });
-                    }}
-                  />
-                  <Label className="col-span-1">Email</Label>
-                  <Input
-                    type="email"
-                    placeholder={"johndoe@exampl.com"}
-                    className="col-span-3"
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        email: e.target.value,
-                      });
-                    }}
-                  />
-                </span>
+                Invite a teammate to collaborate in{" "}
+                <span className="font-medium text-foreground">{defaultOrg}</span>
+                .
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="grid gap-3 py-2">
+              <div className="grid gap-1.5">
+                <Label>Username</Label>
+                <Input
+                  type="text"
+                  placeholder={username}
+                  value={formData.username}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      username: e.target.value,
+                    });
+                  }}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  placeholder={"johndoe@example.com"}
+                  value={formData.email}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      email: e.target.value,
+                    });
+                  }}
+                />
+              </div>
+            </div>
             <AlertDialogFooter>
               <AlertDialogCancel
                 onClick={() => {
@@ -152,7 +168,8 @@ export const ManageTeam = () => {
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   if (sendInvite.isPending) return;
                   sendInvite.mutateAsync({
                     orgname: defaultOrg,
@@ -162,34 +179,54 @@ export const ManageTeam = () => {
                 }}
                 disabled={sendInvite.isPending}
               >
-                Continue
+                {sendInvite.isPending ? "Sending..." : "Send Invite"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </div>
-      <div className="bg-card p-2 mt-2 rounded-lg flex flex-col gap-2">
+
+      <div className="rounded-2xl border bg-card/60 p-3 backdrop-blur-sm">
         {loadingMembers ? (
-          Array.from({ length: 5 }).map((_, idx) => (
-            <Skeleton className="w-full h-10" key={idx} />
-          ))
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <Skeleton className="h-14 w-full rounded-xl" key={idx} />
+            ))}
+          </div>
         ) : (
-          <>
-            <h2 className="text-lg font-bold text-primary">Present Members</h2>
-            {members?.presentMembers?.map((member, idx) => (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 px-1 pb-1">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Present Members
+              </h2>
+              <Badge variant="secondary" className="rounded-full">
+                {members?.presentMembers?.length ?? 0}
+              </Badge>
+            </div>
+            {members?.presentMembers?.map((member) => (
               <div
-                className="flex items-center justify-between"
+                className="flex items-center justify-between gap-3 rounded-xl border bg-card/40 p-3 transition-all hover:border-primary/40 hover:bg-card"
                 key={member.id}
               >
-                <span className="font-bold">
-                  {idx + 1 + ". " + member?.teamMemberUsername}{" "}
-                </span>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+                    {getInitials(member?.teamMemberUsername)}
+                  </span>
+                  <span className="truncate text-sm font-medium">
+                    {member?.teamMemberUsername}
+                  </span>
+                </div>
 
                 {username === member?.teamMemberUsername ? (
-                  <Button disabled={true}>Admin</Button>
+                  <Badge className="gap-1 rounded-full bg-primary/15 text-primary">
+                    <ShieldCheckIcon className="size-3" />
+                    Admin
+                  </Badge>
                 ) : (
-                  <span className="flex gap-2">
+                  <span className="flex items-center gap-2">
                     <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => {
                         toast.loading("Updating member access", {
                           id: "member-access-update",
@@ -201,16 +238,18 @@ export const ManageTeam = () => {
                         });
                       }}
                       className={cn(
-                        "",
                         member?.isAllowed
-                          ? "!bg-green-500 !text-white"
-                          : "!bg-red-500 !text-white"
+                          ? "border-secondary/40 bg-secondary/10 text-secondary hover:bg-secondary/20"
+                          : "border-tertiary/40 bg-tertiary/10 text-tertiary hover:bg-tertiary/20"
                       )}
                     >
                       {member?.isAllowed ? "Has Access" : "No Access"}
                     </Button>
                     <Button
-                      variant={"destructive"}
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      title="Remove member"
                       onClick={() => {
                         toast.loading("Updating member status", {
                           id: "member-access-update",
@@ -221,7 +260,7 @@ export const ManageTeam = () => {
                         });
                       }}
                     >
-                      <LogOutIcon />
+                      <LogOutIcon className="size-4" />
                     </Button>
                   </span>
                 )}
@@ -230,26 +269,35 @@ export const ManageTeam = () => {
 
             {members?.pastMembers?.length! > 0 && (
               <>
-                <h2 className="mt-4 pt-4 border-t text-lg text-destructive font-bold">
-                  Past Members
-                </h2>
-                {members?.pastMembers?.map((member, idx) => (
+                <div className="mt-4 flex items-center gap-2 border-t px-1 pb-1 pt-4">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-destructive">
+                    Past Members
+                  </h2>
+                </div>
+                {members?.pastMembers?.map((member) => (
                   <div
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between gap-3 rounded-xl border bg-card/40 p-3"
                     key={member.id}
                   >
-                    <span className="font-bold">
-                      {idx + 1 + ". " + member?.teamMemberUsername}{" "}
-                    </span>
-                    <Badge variant={"destructive"}>Left</Badge>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-muted-foreground">
+                        {getInitials(member?.teamMemberUsername)}
+                      </span>
+                      <span className="truncate text-sm font-medium text-muted-foreground">
+                        {member?.teamMemberUsername}
+                      </span>
+                    </div>
+                    <Badge variant={"destructive"} className="rounded-full">
+                      Left
+                    </Badge>
                   </div>
                 ))}
               </>
             )}
-          </>
+          </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 
@@ -296,11 +344,18 @@ export const ManageInvitations = () => {
     orgname: string;
     invitationId: string;
   }) => {
+    const label = tab === "received" ? orgname : username;
     return (
-      <span className="flex items-center justify-between hover:bg-accent p-2 rounded-md transition-all duration-300 w-full">
-        <span>{tab === "received" ? orgname : username}</span>
+      <div className="flex items-center justify-between gap-3 rounded-xl border bg-card/40 p-3 transition-all hover:border-primary/40 hover:bg-card">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+            {getInitials(label)}
+          </span>
+          <span className="truncate text-sm font-medium">{label}</span>
+        </div>
         <span className="flex items-center gap-2">
           <Badge
+            className="rounded-full capitalize"
             variant={
               status === "pending"
                 ? "outline"
@@ -313,8 +368,11 @@ export const ManageInvitations = () => {
           </Badge>
           {tab === "received" && !isResponded && (
             <>
-              <CheckIcon
-                className="size-5 text-green-500 cursor-pointer"
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 border-secondary/40 bg-secondary/10 text-secondary hover:bg-secondary/20"
+                title="Accept"
                 onClick={() => {
                   const toastId = toast.loading("Accepting invitation");
                   setToastId(toastId);
@@ -324,9 +382,14 @@ export const ManageInvitations = () => {
                     orgname,
                   });
                 }}
-              />
-              <XOctagon
-                className="size-5 text-red-500 cursor-pointer"
+              >
+                <CheckIcon className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                title="Reject"
                 onClick={() => {
                   const toastId = toast.loading("Rejecting invitation");
                   setToastId(toastId);
@@ -336,42 +399,47 @@ export const ManageInvitations = () => {
                     orgname,
                   });
                 }}
-              />
+              >
+                <XIcon className="size-4" />
+              </Button>
             </>
           )}
         </span>
-      </span>
+      </div>
     );
   };
+
   if (loadingInvitations) {
     return (
-      <div className="w-full flex-col items-start">
-        <span className="flex items-center gap-2">
-          <Skeleton className="w-24 h-6"></Skeleton>
-          <Skeleton className="w-24 h-6"></Skeleton>
-        </span>
-        <span className="flex flex-col w-full bg-card mt-4 items-center gap-2 py-2">
-          {Array.from({ length: 5 }).map((_, idx) => {
-            return (
-              <span
-                className="w-full flex items-center justify-between py-2 px-4"
-                key={idx}
-              >
-                <Skeleton className="w-48 h-8" />
-                <Skeleton className="w-16 h-6" />
-              </span>
-            );
-          })}
-        </span>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-24 rounded-md" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </div>
+        <div className="flex flex-col gap-2 rounded-2xl border bg-card/60 p-3 backdrop-blur-sm">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <Skeleton className="h-14 w-full rounded-xl" key={idx} />
+          ))}
+        </div>
       </div>
     );
   }
+
+  const EmptyState = ({ children }: { children: React.ReactNode }) => (
+    <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+      <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <UsersIcon className="size-6" />
+      </div>
+      <p className="max-w-md text-sm text-muted-foreground">{children}</p>
+    </div>
+  );
 
   return (
     <Tabs
       defaultValue={
         invitations && invitations?.sent?.length > 0 ? "sent" : "received"
       }
+      className="space-y-3"
     >
       <TabsList>
         <TabsTrigger value="sent">Sent</TabsTrigger>
@@ -381,7 +449,7 @@ export const ManageInvitations = () => {
       </TabsList>
       <TabsContent
         value="sent"
-        className="bg-card p-2 flex flex-col w-full gap-2"
+        className="flex w-full flex-col gap-2 rounded-2xl border bg-card/60 p-3 backdrop-blur-sm"
       >
         {invitations?.sent.length ? (
           invitations?.sent?.map((invitation) => (
@@ -396,19 +464,16 @@ export const ManageInvitations = () => {
             />
           ))
         ) : (
-          <div className="">
-            <h1 className="w-full py-[16vh] text-center text-2xl font-semibold italic">
-              You never sent any invitation to other users <br />
-              for Organization{" "}
-              <span className="text-primary">{defaultOrg}</span>
-            </h1>
-          </div>
+          <EmptyState>
+            You haven&apos;t sent any invitations for{" "}
+            <span className="font-medium text-primary">{defaultOrg}</span> yet.
+          </EmptyState>
         )}
       </TabsContent>
       {defaultOrg === username && (
         <TabsContent
           value="received"
-          className="bg-card p-2 flex flex-col w-full gap-2"
+          className="flex w-full flex-col gap-2 rounded-2xl border bg-card/60 p-3 backdrop-blur-sm"
         >
           {invitations?.received.length ? (
             invitations?.received?.map((invitation) => (
@@ -423,11 +488,9 @@ export const ManageInvitations = () => {
               />
             ))
           ) : (
-            <div className="">
-              <h1 className="w-full py-[16vh] text-center text-2xl font-semibold italic">
-                No on sent you any invitation <br /> to join there organization
-              </h1>
-            </div>
+            <EmptyState>
+              No one has sent you an invitation to join their organization.
+            </EmptyState>
           )}
         </TabsContent>
       )}
@@ -441,48 +504,91 @@ export const OrgList = () => {
     trpc.teamRouter.getTeamMemberOrgs.queryOptions()
   );
 
-  if (loadingOrgs) return <>Loading</>;
+  if (loadingOrgs)
+    return (
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <Skeleton key={idx} className="h-16 w-full rounded-2xl" />
+        ))}
+      </div>
+    );
 
   return (
-    <div className="flex flex-col gap-2">
-      <h2 className="text-xl font-bold  text-primary">Current Organizations</h2>
-      {orgs && orgs.presentOrgs?.length > 0 ? (
-        orgs.presentOrgs?.map((org) => (
-          <Link
-            href={`/dashboard/team/organization/${org.orgname}`}
-            key={org.id}
-            className="w-full bg-card p-4 rounded-md border hover:bg-primary/20 transition-all duration-300 flex items-center justify-between"
-          >
-            <h3 className="text-lg font-bold">{org.orgname}</h3>
-            {org.isAllowed ? (
-              <Badge variant={"default"}>Has Access</Badge>
-            ) : (
-              <Badge variant={"destructive"}>No Access</Badge>
-            )}
-          </Link>
-        ))
-      ) : (
-        <div className="">
-          <h1 className="w-full py-[16vh] text-center text-2xl font-semibold italic">
-            You are not part of any organization <br /> as a team member
-          </h1>
-        </div>
-      )}
-      {orgs && orgs.pastOrgs?.length > 0 && (
-        <>
-          <h2 className="text-xl font-bold mt-4 pt-4 border-t text-destructive">
-            Past Organizations
+    <div className="space-y-4">
+      <div>
+        <div className="flex items-center gap-2 px-1 pb-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Current Organizations
           </h2>
-          {orgs.pastOrgs?.map((org) => (
-            <span
-              key={org.id}
-              className="w-full bg-card p-4 rounded-md border flex items-center justify-between  transition-all duration-300"
-            >
-              <h3 className="text-lg font-bold">{org.orgname}</h3>
-              <Badge variant={"destructive"}>Left</Badge>
-            </span>
-          ))}
-        </>
+        </div>
+        {orgs && orgs.presentOrgs?.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {orgs.presentOrgs?.map((org) => (
+              <Link
+                href={`/dashboard/team/organization/${org.orgname}`}
+                key={org.id}
+                className="group flex items-center justify-between gap-3 rounded-2xl border bg-card/60 p-4 backdrop-blur-sm transition-all hover:border-primary/40 hover:bg-card"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Building2Icon className="size-5" />
+                  </span>
+                  <h3 className="truncate text-sm font-semibold">
+                    {org.orgname}
+                  </h3>
+                </div>
+                {org.isAllowed ? (
+                  <Badge className="rounded-full bg-secondary/15 text-secondary">
+                    Has Access
+                  </Badge>
+                ) : (
+                  <Badge variant={"destructive"} className="rounded-full">
+                    No Access
+                  </Badge>
+                )}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Building2Icon className="size-6" />
+            </div>
+            <p className="max-w-md text-sm text-muted-foreground">
+              You are not part of any organization as a team member.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {orgs && orgs.pastOrgs?.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 border-t px-1 pb-2 pt-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-destructive">
+              Past Organizations
+            </h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {orgs.pastOrgs?.map((org) => (
+              <div
+                key={org.id}
+                className="flex items-center justify-between gap-3 rounded-2xl border bg-card/40 p-4"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                    <Building2Icon className="size-5" />
+                  </span>
+                  <h3 className="truncate text-sm font-semibold text-muted-foreground">
+                    {org.orgname}
+                  </h3>
+                </div>
+                <Badge variant={"destructive"} className="rounded-full">
+                  Left
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -490,37 +596,47 @@ export const OrgList = () => {
 
 export const TeamPage = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <div className="sticky top-0 z-10 bg-card border-b h-18">
-        <div className="flex items-center justify-between p-2">
-          <div className="space-y-1">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-3">
-              Teams and Orgs you are part in
-            </h1>
-            <p className="text-xs md:text-sm text-muted-foreground italic">
-              Manage teams in your org or orgs in which you are a team member
-            </p>
-          </div>
+    <div className="relative flex h-full max-h-svh flex-col overflow-hidden bg-background">
+      {/* Header */}
+      <header className="relative z-20 flex h-[68px] shrink-0 items-center gap-3 border-b bg-card px-6 shadow-sm">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+          <UsersIcon className="size-5" />
+        </span>
+        <div className="min-w-0 space-y-0.5">
+          <h1 className="truncate text-base font-bold leading-tight tracking-tight md:text-lg">
+            Teams &amp; Organizations
+          </h1>
+          <p className="truncate text-xs text-muted-foreground">
+            Manage your team or the orgs you belong to as a member
+          </p>
         </div>
-      </div>
+      </header>
 
-      <div className="mt-2 p-4">
-        <Tabs defaultValue="team">
-          <TabsList>
-            <TabsTrigger value="team">Team</TabsTrigger>
-            <TabsTrigger value="orgs">Orgs</TabsTrigger>
-            <TabsTrigger value="invitations">Invitations</TabsTrigger>
-          </TabsList>
-          <TabsContent value="team">
-            <ManageTeam />
-          </TabsContent>
-          <TabsContent value="orgs">
-            <OrgList />
-          </TabsContent>
-          <TabsContent value="invitations">
-            <ManageInvitations />
-          </TabsContent>
-        </Tabs>
+      <div className="relative flex-1 overflow-y-auto">
+        {/* ambient glow backdrop, scoped to the scroll area */}
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -left-40 -top-40 size-96 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute -right-32 bottom-0 size-96 rounded-full bg-secondary/10 blur-3xl" />
+        </div>
+
+        <div className="p-5">
+          <Tabs defaultValue="team" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="team">Team</TabsTrigger>
+              <TabsTrigger value="orgs">Orgs</TabsTrigger>
+              <TabsTrigger value="invitations">Invitations</TabsTrigger>
+            </TabsList>
+            <TabsContent value="team">
+              <ManageTeam />
+            </TabsContent>
+            <TabsContent value="orgs">
+              <OrgList />
+            </TabsContent>
+            <TabsContent value="invitations">
+              <ManageInvitations />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

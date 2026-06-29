@@ -23,7 +23,7 @@ export class OpenAIClient {
   async chatgptModelPaid(
     system: string,
     userInput: string,
-    modelName: string = "gpt-4.1"
+    modelName: string = "gpt-5.4-mini"
   ) {
     const response = await this.client.chat.completions.create({
       model: modelName,
@@ -39,7 +39,7 @@ export class OpenAIClient {
     system: string,
     userInput: string,
     developerInput: string,
-    modelName: string = "gpt-4.1"
+    modelName: string = "gpt-5.4-mini"
   ) {
     const response = await this.client.chat.completions.create({
       model: modelName,
@@ -53,7 +53,7 @@ export class OpenAIClient {
   }
   async chatgptModelFree(system: string, userInput: string) {
     const response = await this.client.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-5.4-mini",
       messages: [
         { role: "system", content: system },
         { role: "user", content: userInput },

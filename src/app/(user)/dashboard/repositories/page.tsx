@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 const Page = () => {
   return (
-    <div className="w-full bg-background h-screen ">
+    <div className="w-full bg-background h-full overflow-hidden">
       <Suspense fallback={<RepositoriesPageLoader />}>
         <RepositoriesPage />
       </Suspense>

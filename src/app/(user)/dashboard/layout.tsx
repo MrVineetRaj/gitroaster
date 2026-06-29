@@ -46,20 +46,20 @@ export async function DashboardMobileNav() {
 
 const UserLayout = async ({ children }: { children: React.ReactNode }) => {
   return (
-    <>
+    <div className="flex h-svh max-h-svh max-w-screen flex-col overflow-hidden">
       <Suspense fallback={<></>}>
         <DashboardMobileNav />
       </Suspense>
 
-      <div className="max-w-screen flex items-start justify-start ">
+      <div className="flex min-h-0 flex-1 items-stretch justify-start">
         <Suspense fallback={<DashboardSidebarLoader />}>
           <DashboardSidebarServer />
         </Suspense>
-        {children}
+        <main className="min-w-0 flex-1">{children}</main>
         {/* <BugDetailCollector /> */}
         <Toaster position="top-center" />
       </div>
-    </>
+    </div>
   );
 };
 
